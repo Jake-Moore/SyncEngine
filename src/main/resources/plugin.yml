@@ -1,0 +1,9 @@
+name: Syncraft
+main: com.kamikazejam.syncraft.SyncraftPlugin
+version: ${version}
+authors: [KamikazeJAM]
+website: https://github.com/Jake-Moore/Syncraft
+description: ${description}
+api-version: 1.13
+depend:
+  - KamiCommon
