@@ -22,10 +22,12 @@ val kamiCommonVer = "3.0.3.9"
 dependencies {
     // Spigot (from public nexus)
     compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
-    // KamiCommon (spigot dependency)
+    // KamiCommon (spigot dependency) - for MultiVersion support
     compileOnly("com.kamikazejam.kamicommon:spigot-jar:$kamiCommonVer")
 
-
+    // Internal Libraries
+    shadow("dev.morphia.morphia:morphia-core:2.4.14")
+    shadow("io.lettuce:lettuce-core:6.3.2.RELEASE")
 
     // Annotation Processors
     //   Lombok
@@ -56,6 +58,9 @@ tasks {
         minimize()
         archiveClassifier.set("")
         configurations = listOf(project.configurations.shadow.get())
+        // Relocations
+        relocate("dev.morphia", "com.kamikazejam.syncraft.morphia")
+        relocate("io.lettuce.core", "com.kamikazejam.syncraft.lettuce.core")
     }
 
     processResources {

@@ -1,0 +1,40 @@
+# ------------------------------------------------------------- #
+#                         SERVER MODE                           #
+# ------------------------------------------------------------- #
+# Options: STANDALONE, NETWORKED
+#   STANDALONE mode is for most servers, where your gamemode runs on a single server.
+#   NETWORKED mode is for instanced networks, where your gamemode runs on multiple servers.
+mode: STANDALONE
+# Additional Configuration for STANDALONE mode
+standalone:
+  # Standalone Servers can either use files or a MongoDB database for data storage.
+  # Options: FILE, MONGODB
+  storage: FILE
+
+
+
+# ------------------------------------------------------------- #
+#                         CONNECTIONS                           #
+# ------------------------------------------------------------- #
+# This is where connections to MongoDB and Redis are configured.
+# NOTE: depending on your mode and configuration, you may not need either of these.
+#   Read the comments in the SERVER MODE section for more information.
+connections:
+  FILE:
+    # relative directory from the plugin data folder
+    directory: './data'
+  MONGODB:
+    # The MongoDB connection URI.
+    uri: 'mongodb://localhost:27017'
+  # Redis Connection Information
+  REDIS:
+    address: '127.0.0.1'
+    port: 6379
+    # If your redis is private (recommended), you can configure authentication here.
+    auth:
+      enabled: false
+      password: 'changeme'
+
+
+# Enables additional logging for debugging purposes. Can be informative for developers.
+debug: true
