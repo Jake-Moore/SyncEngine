@@ -15,6 +15,7 @@ public class MongoConf {
     }
 
     private static @Nullable MongoConf conf = null;
+
     public static MongoConf get() {
         if (conf != null) {
             return conf;

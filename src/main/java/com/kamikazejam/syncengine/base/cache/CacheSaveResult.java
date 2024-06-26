@@ -12,6 +12,7 @@ public class CacheSaveResult {
      * How many Sync saves failed.
      */
     private final int failed;
+
     public CacheSaveResult(int total, int failed) {
         this.total = total;
         this.failed = failed;

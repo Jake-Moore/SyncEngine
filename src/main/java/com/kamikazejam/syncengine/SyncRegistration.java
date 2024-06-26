@@ -13,7 +13,7 @@ public class SyncRegistration {
     private final @NotNull JavaPlugin plugin;
     /**
      * The full database name as it would appear in MongoDB (or a folder name),
-     * This includes the payload group prefix, described in {@link SyncEngineAPI#getFullDatabaseName(String)} (String)}
+     * This includes the sync group prefix, described in {@link SyncEngineAPI#getFullDatabaseName(String)} (String)}
      * All plugin caches will be stored in this database as collections
      */
     private final String databaseName;

@@ -21,8 +21,8 @@ standalone:
 #   Read the comments in the SERVER MODE section for more information.
 connections:
   FILE:
-    # relative directory from the plugin data folder
-    directory: './data'
+    # Directory name for the folder inside the plugin folder
+    directoryName: 'data'
   MONGODB:
     # The MongoDB connection URI.
     uri: 'mongodb://localhost:27017'

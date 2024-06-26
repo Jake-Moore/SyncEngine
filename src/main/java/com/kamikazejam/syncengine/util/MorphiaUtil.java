@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class MorphiaUtil {
     private static MorphiaConfig morphiaConfig = null;
+
     public static @NotNull MorphiaConfig getMorphiaConfig() {
         if (morphiaConfig != null) {
             return morphiaConfig;

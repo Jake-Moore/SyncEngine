@@ -15,17 +15,24 @@ import org.bukkit.plugin.Plugin;
 @Getter
 public class RedisService extends LoggerService implements Service {
     private boolean running = false;
-    @Setter private boolean redisInitConnect = false;
-    @Setter private boolean redisConnected = false;
-    @Setter private volatile long lastRedisConnectionAttempt = 0;
+    @Setter
+    private boolean redisInitConnect = false;
+    @Setter
+    private boolean redisConnected = false;
+    @Setter
+    private volatile long lastRedisConnectionAttempt = 0;
 
     // Redis
-    @Getter private RedisClient redisClient = null;
-    @Getter private StatefulRedisConnection<String, String> redis = null;
-    @Getter private StatefulRedisPubSubConnection<String, String> redisPubSub = null;
+    @Getter
+    private RedisClient redisClient = null;
+    @Getter
+    private StatefulRedisConnection<String, String> redis = null;
+    @Getter
+    private StatefulRedisPubSubConnection<String, String> redisPubSub = null;
     private RedisMonitor redisMonitor = null;
 
-    public RedisService() {}
+    public RedisService() {
+    }
 
     // ------------------------------------------------- //
     //                StorageService                     //
@@ -68,7 +75,6 @@ public class RedisService extends LoggerService implements Service {
     }
 
 
-
     // ------------------------------------------------- //
     //                 Redis Connection                 //
     // ------------------------------------------------- //
@@ -100,6 +106,7 @@ public class RedisService extends LoggerService implements Service {
             }
         }
     }
+
     private boolean disconnectRedis() {
         if (this.redisMonitor != null) {
             this.redisMonitor.shutdown();
@@ -117,8 +124,6 @@ public class RedisService extends LoggerService implements Service {
     }
 
 
-
-
     // ------------------------------------------------- //
     //                   ErrorService                    //
     // ------------------------------------------------- //
@@ -126,10 +131,12 @@ public class RedisService extends LoggerService implements Service {
     public boolean isDebug() {
         return SyncEnginePlugin.get().isDebug();
     }
+
     @Override
     public Plugin getPlugin() {
         return SyncEnginePlugin.get();
     }
+
     @Override
     public String getLoggerName() {
         return "RedisService";

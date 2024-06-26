@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 public class MongoMonitor implements ServerMonitorListener {
 
     private final MongoService service;
+
     public MongoMonitor(MongoService service) {
         this.service = service;
     }

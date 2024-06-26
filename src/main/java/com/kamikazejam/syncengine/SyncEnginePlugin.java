@@ -1,6 +1,5 @@
 package com.kamikazejam.syncengine;
 
-import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.KamiPlugin;
 import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
 import com.kamikazejam.kamicommon.gson.JsonObject;
@@ -10,11 +9,13 @@ import com.kamikazejam.syncengine.base.mode.StorageMode;
 import com.kamikazejam.syncengine.base.mode.SyncMode;
 import com.kamikazejam.syncengine.command.SyncEngineCommand;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
-import com.kamikazejam.syncengine.connections.storage.FileService;
-import com.kamikazejam.syncengine.connections.storage.MongoService;
+import com.kamikazejam.syncengine.connections.storage.StorageService;
+import com.kamikazejam.syncengine.server.ServerService;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.InputStream;
@@ -27,13 +28,18 @@ import java.util.UUID;
 public class SyncEnginePlugin extends KamiPlugin {
     // INSTANCE
     private static SyncEnginePlugin instance = null;
-    public static SyncEnginePlugin get() { return instance; }
+
+    @ApiStatus.Internal
+    public static SyncEnginePlugin get() {
+        return instance;
+    }
 
     private SyncEngineCommand command;
     private SyncMode syncMode;
     private StorageMode storageMode;
     private String syncId;
     private String syncGroup;
+    private StorageService storageService;
 
     @Override
     public void onEnableInner() {
@@ -50,6 +56,7 @@ public class SyncEnginePlugin extends KamiPlugin {
         syncMode = SyncMode.valueOf(getKamiConfig().getString("mode"));
         storageMode = syncMode.getStorageMode(getKamiConfig());
         getLogger().info("Running in " + Txt.getNicedEnum(syncMode) + " mode with " + Txt.getNicedEnum(storageMode) + " storage.");
+        storageService = storageMode.getStorageService();
 
         // Load Sync ID
         KamiConfig syncConf = new KamiConfig(this, new File(getDataFolder(), "syncid.yml"), true);
@@ -76,16 +83,9 @@ public class SyncEnginePlugin extends KamiPlugin {
             command.unregisterCommand();
         }
 
-        // Shutdown services
-        if (redisService != null && redisService.isRunning()) {
-            redisService.shutdown();
-        }
-        if (mongoService != null && mongoService.isRunning()) {
-            mongoService.shutdown();
-        }
-        if (fileService != null && fileService.isRunning()) {
-            fileService.shutdown();
-        }
+        // Shutdown Services
+        syncMode.disableServices();
+        storageMode.disableServices();
     }
 
     /**
@@ -113,37 +113,21 @@ public class SyncEnginePlugin extends KamiPlugin {
         }
         return true;
     }
+
     private void onVerFailure(String pluginName, String minVer) {
         getLogger().severe(pluginName + " version is too old! (" + minVer + " or higher required)");
     }
 
 
+    public @Nullable RedisService getRedisService() {
+        return syncMode.getRedisService();
+    }
 
-    private RedisService redisService = null;
-    public @NotNull RedisService getRedisService() {
-        Preconditions.checkState(syncMode == SyncMode.NETWORKED, "RedisService is only available in NETWORKED mode");
-        if (redisService == null) {
-            redisService = new RedisService();
-            redisService.start();
-        }
-        return redisService;
+    public @Nullable ServerService getServerService() {
+        return syncMode.getServerService();
     }
-    private MongoService mongoService = null;
-    public @NotNull MongoService getMongoService() {
-        Preconditions.checkState(storageMode == StorageMode.MONGODB, "MongoService is only available in MONGODB storage mode");
-        if (mongoService == null) {
-            mongoService = new MongoService();
-            mongoService.start();
-        }
-        return mongoService;
-    }
-    private FileService fileService = null;
-    public @NotNull FileService getFileService() {
-        Preconditions.checkState(storageMode == StorageMode.FILE, "FileService is only available in FILE storage mode");
-        if (fileService == null) {
-            fileService = new FileService();
-            fileService.start();
-        }
-        return fileService;
+
+    public @NotNull StorageService getStorageService() {
+        return storageMode.getStorageService();
     }
 }

@@ -34,8 +34,8 @@ public class RedisConf {
     }
 
 
-
     private static @Nullable RedisConf conf = null;
+
     public static @NotNull RedisConf get() {
         if (conf != null) {
             return conf;

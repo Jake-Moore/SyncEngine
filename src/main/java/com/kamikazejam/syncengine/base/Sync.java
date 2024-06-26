@@ -73,13 +73,20 @@ public interface Sync<K> {
     Cache<K, ?> getCache();
 
     /**
+     * Sets the cache associated with this Sync object.
+     */
+    void setCache(Cache<K, ?> cache);
+
+    /**
      * Save this Sync object (its json) to the storage.
+     *
      * @return if the save was successful
      */
     boolean save();
 
     /**
      * Save this Sync object (its json) to the storage asynchronously.
+     *
      * @return CompletableFuture<Boolean> if the save was successful
      */
     CompletableFuture<Boolean> saveAsync();
@@ -91,9 +98,15 @@ public interface Sync<K> {
 
     /**
      * Use identifying fields to determine if two Sync objects are equal.
+     *
      * @return if the two Sync objects have matching identification
      */
     boolean equals(Object object);
+
+    /**
+     * @return True if there is an active handshake for this Sync object.
+     */
+    boolean hasValidHandshake();
 
     /**
      * Load another Sync object's data into this Sync object. (Overwrite/Update)
@@ -111,4 +124,8 @@ public interface Sync<K> {
      */
     long getVersion();
 
+    /**
+     * @return If this Sync is read-only right now
+     */
+    boolean isReadOnly();
 }

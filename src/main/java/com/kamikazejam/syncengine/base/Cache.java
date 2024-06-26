@@ -4,12 +4,14 @@ import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
 import com.kamikazejam.syncengine.base.cache.SyncLoader;
 import com.kamikazejam.syncengine.base.error.LoggerService;
-import com.kamikazejam.syncengine.base.sync.SyncQueryModifier;
+import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
+import com.kamikazejam.syncengine.base.store.StoreMethods;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -20,7 +22,11 @@ import java.util.concurrent.CompletableFuture;
 public interface Cache<K, X extends Sync<K>> extends Service {
 
     /**
-     * Gets the name of this cache.
+     * Get the name of this cache (set by the end user, should be unique)
+     * A {@link DuplicateCacheException} error will be thrown if another cache
+     * exists with the same name or ID during creation.
+     *
+     * @return String: Cache Name
      */
     @NotNull
     String getName();
@@ -96,12 +102,6 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     Collection<X> getAll(boolean cacheSyncs);
 
     /**
-     * Retrieves ALL Syncs that match the query in the database. Optionally caches them.
-     */
-    @NotNull
-    Collection<X> getAll(boolean cacheSyncs, Set<SyncQueryModifier<X>> modifiers);
-
-    /**
      * Retrieves ALL Syncs from the database, then sorts them by the comparator. Optionally caches them.
      *
      * @return a List to maintain order.
@@ -109,14 +109,6 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     @Blocking
     @NotNull
     List<X> getAll(boolean cacheSyncs, Comparator<? super X> orderBy);
-
-    /**
-     * Retrieves ALL Syncs that match the query in the database, then sorts them by the comparator. Optionally caches them.
-     *
-     * @return a List to maintain order.
-     */
-    @NotNull
-    List<X> getAll(boolean cacheSyncs, Comparator<? super X> orderBy, Set<SyncQueryModifier<X>> modifiers);
 
     /**
      * Gets all Sync objects that are in this cache.
@@ -128,7 +120,7 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * Gets the {@link LoggerService} for this cache. For logging purposes.
      */
     @NotNull
-    LoggerService getErrorService();
+    LoggerService getLoggerService();
 
     /**
      * Sets the {@link LoggerService} for this cache.
@@ -142,6 +134,18 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      */
     @NotNull
     CacheSaveResult saveAll();
+
+    /**
+     * Gets the {@link StoreMethods} that handles local storage for this cache.
+     */
+    @NotNull
+    StoreMethods<K, X> getLocalStore();
+
+    /**
+     * Gets the {@link StoreMethods} that handles database storage for this cache.
+     */
+    @NotNull
+    StoreMethods<K, X> getDatabaseStore();
 
     /**
      * Gets the plugin that set up this cache.
@@ -203,6 +207,12 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     void runAsync(@NotNull Runnable runnable);
 
     /**
+     * Helper method to use the {@link #getPlugin()} plugin to run a sync bukkit task.
+     */
+    @ApiStatus.Internal
+    void runSync(@NotNull Runnable runnable);
+
+    /**
      * Get the number of Sync objects currently stored locally in this cache
      */
     int getCacheSize();
@@ -218,6 +228,32 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      */
     @NotNull
     X create(@NotNull K key);
+
+
+    /**
+     * Get a Sync object from this cache (will load from DB if necessary)
+     * See {@link #getFromCache(Object)} if you want to avoid loading from the database.
+     */
+    @NotNull
+    Optional<X> get(@Nullable K key);
+
+    /**
+     * Get a Sync object from this cache (will load from DB if necessary)
+     * See {@link #getFromCache(Object)} if you want to avoid loading from the database.
+     */
+    @NotNull
+    Optional<X> get(@Nullable K key, boolean saveToLocalCache);
+
+    /**
+     * Get a Sync object from this cache (loaded from DB if necessary) or create one with this key if not found.
+     */
+    @NotNull
+    X getOrCreate(@NotNull K key);
+
+    /**
+     * @return True iff the cache contains a Sync with the provided key.
+     */
+    boolean hasKey(@NotNull K key);
 
     /**
      * Gets the {@link SyncLoader} for the provided key.
@@ -235,5 +271,37 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      */
     @ApiStatus.Internal
     boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async);
+
+    // TODO
+//    RedisNetworkService getNetworkService();
+//
+//    Optional<NetworkProfile> getNetworked(@NotNull UUID key);
+//
+//    <T extends SyncProfile> Optional<NetworkProfile> getNetworked(@NotNull T sync);
+
+    /**
+     * Internal method used by SyncEngine to forcefully update a local instance of a Sync object with a newer one,
+     * allowing your references to the existing Sync to remain intact and up-to-date.
+     * Note that this only effects persistent (non-transient) fields.
+     *
+     * @param sync   The Sync to update
+     * @param update The newer version of said Sync to replace the values of {@param sync} with.
+     */
+    @ApiStatus.Internal
+    void updateSyncFromNewer(@NotNull X sync, @NotNull X update);
+
+    /**
+     * Gets the class of the sync object this cache is associated with.
+     */
+    @ApiStatus.Internal
+    @NotNull
+    Class<X> getSyncClass();
+
+    /**
+     * Gets an empty class of the Sync, so MongoService can read its identifierFieldName() method
+     */
+    @ApiStatus.Internal
+    @NotNull
+    X getEmptySync();
 }
 

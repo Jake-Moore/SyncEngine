@@ -1,19 +1,14 @@
-package com.kamikazejam.syncengine.connections.storage;
+package com.kamikazejam.syncengine.base.store;
 
-import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.Sync;
-import com.kamikazejam.syncengine.base.sync.SyncQueryModifier;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 
-/**
- * Defines the minimum set of methods all Storage services must implement.
- */
 @SuppressWarnings({"UnusedReturnValue", "rawtypes", "unused"})
-public interface SyncStore<K, X extends Sync> extends Service {
+public interface StoreMethods<K, X extends Sync> {
 
     /**
      * Retrieve a Sync from this store.
@@ -21,7 +16,7 @@ public interface SyncStore<K, X extends Sync> extends Service {
     Optional<X> get(@NotNull K key);
 
     /**
-     * Save a Sync to this store. (depends on storage type)
+     * Save a Sync to this store.
      */
     boolean save(@NotNull X sync);
 
@@ -37,15 +32,17 @@ public interface SyncStore<K, X extends Sync> extends Service {
 
     /**
      * Remove a Sync from this store.
+     *
+     * @return If the Sync existed, and was removed.
      */
-    @Nullable
-    X remove(@NotNull K key);
+    boolean remove(@NotNull K key);
 
     /**
      * Remove a Sync from this store.
+     *
+     * @return If the Sync existed, and was removed.
      */
-    @Nullable
-    X remove(@NotNull X sync);
+    boolean remove(@NotNull X sync);
 
     /**
      * Retrieve all Syncs from this store.
@@ -54,16 +51,25 @@ public interface SyncStore<K, X extends Sync> extends Service {
     Collection<X> getAll();
 
     /**
-     * Retrieve all Syncs from this store, that meet the query.
-     * @param modifiers Additional query modifiers (filters, sorts, etc.)
+     * Clear all Syncs from this store. No Syncs are deleted, just removed from memory.
      */
-    @NotNull
-    Collection<X> getAll(Collection<SyncQueryModifier<X>> modifiers);
+    long clear();
 
     /**
-     * Identifying name for this storage.
+     * Gets the name of this storage layer.
      */
     @NotNull
-    String getName();
+    String getStoreLayer();
+
+    /**
+     * @return How many objects are in this Store
+     */
+    long size();
+
+    /**
+     * @return True IFF this Store is a database (stores data elsewhere)
+     */
+    @ApiStatus.Internal
+    boolean isDatabase();
 
 }
