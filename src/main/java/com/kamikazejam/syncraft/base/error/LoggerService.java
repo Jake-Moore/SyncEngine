@@ -9,7 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
-public abstract class ErrorService {
+public abstract class LoggerService {
 
     // Abstraction
     public abstract String getLoggerName();

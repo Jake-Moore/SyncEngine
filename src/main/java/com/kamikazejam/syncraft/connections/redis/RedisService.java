@@ -2,7 +2,7 @@ package com.kamikazejam.syncraft.connections.redis;
 
 import com.kamikazejam.syncraft.SyncraftPlugin;
 import com.kamikazejam.syncraft.base.Service;
-import com.kamikazejam.syncraft.base.error.ErrorService;
+import com.kamikazejam.syncraft.base.error.LoggerService;
 import com.kamikazejam.syncraft.connections.config.RedisConf;
 import com.kamikazejam.syncraft.connections.monitor.RedisMonitor;
 import io.lettuce.core.RedisClient;
@@ -13,7 +13,7 @@ import lombok.Setter;
 import org.bukkit.plugin.Plugin;
 
 @Getter
-public class RedisService extends ErrorService implements Service {
+public class RedisService extends LoggerService implements Service {
     private boolean running = false;
     @Setter private boolean redisInitConnect = false;
     @Setter private boolean redisConnected = false;

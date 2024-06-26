@@ -1,12 +1,13 @@
 package com.kamikazejam.syncraft.connections.storage;
 
 import com.kamikazejam.syncraft.SyncraftPlugin;
-import com.kamikazejam.syncraft.base.error.ErrorService;
+import com.kamikazejam.syncraft.base.Service;
+import com.kamikazejam.syncraft.base.error.LoggerService;
 import lombok.Getter;
 import org.bukkit.plugin.Plugin;
 
 @Getter
-public class FileService extends ErrorService implements StorageService {
+public class FileService extends LoggerService implements Service {
     private boolean running = false;
 
     public FileService() {}

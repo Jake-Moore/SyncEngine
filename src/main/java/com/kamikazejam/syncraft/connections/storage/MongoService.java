@@ -2,7 +2,8 @@ package com.kamikazejam.syncraft.connections.storage;
 
 import com.google.common.base.Preconditions;
 import com.kamikazejam.syncraft.SyncraftPlugin;
-import com.kamikazejam.syncraft.base.error.ErrorService;
+import com.kamikazejam.syncraft.base.Service;
+import com.kamikazejam.syncraft.base.error.LoggerService;
 import com.kamikazejam.syncraft.connections.config.MongoConf;
 import com.kamikazejam.syncraft.connections.monitor.MongoMonitor;
 import com.kamikazejam.syncraft.util.MorphiaUtil;
@@ -17,7 +18,7 @@ import org.bson.UuidRepresentation;
 import org.bukkit.plugin.Plugin;
 
 @Getter
-public class MongoService extends ErrorService implements StorageService {
+public class MongoService extends LoggerService implements Service {
     private boolean running = false;
     @Setter private boolean mongoInitConnect = false;
     @Setter private boolean mongoConnected = false;
@@ -43,8 +44,7 @@ public class MongoService extends ErrorService implements StorageService {
             this.error("Failed to start MongoService, connection failed.");
             return false;
         }
-
-        this.debug("Connected to MongoDB");
+        // Client was created, MongoMonitor should log more as the connection succeeds or fails
         return true;
     }
 
