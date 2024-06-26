@@ -1,8 +1,11 @@
 package com.kamikazejam.syncengine;
 
+import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
+import com.kamikazejam.syncengine.base.exception.DuplicateDatabaseException;
 import lombok.Getter;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,6 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 public class SyncEngineAPI {
     @Getter
     private static final ConcurrentMap<String, Cache<?, ?>> caches = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, String> databases = new ConcurrentHashMap<>(); // Stored lowercase for uniqueness checks
 
     /**
      * Register a cache w/ a hook
@@ -68,5 +72,29 @@ public class SyncEngineAPI {
      */
     public static boolean isDebug() {
         return SyncEnginePlugin.get().isDebug();
+    }
+
+    public static void registerDatabase(String databaseName) throws DuplicateDatabaseException {
+        if (isDatabaseNameRegistered(databaseName)) {
+            throw new DuplicateDatabaseException(databaseName);
+        }
+        databases.put(databaseName.toLowerCase(), databaseName);
+    }
+
+    public static boolean isDatabaseNameRegistered(String databaseName) {
+        return databases.containsKey(databaseName.toLowerCase());
+    }
+
+    /**
+     * Register your plugin and reserve a database name for your plugin's caches.
+     * @return Your SyncRegistration (to be passed into your cache constructors)
+     * @throws DuplicateDatabaseException - if this databaseName is already in use
+     */
+    public static SyncRegistration register(@NotNull JavaPlugin plugin, @NotNull String databaseName) throws DuplicateDatabaseException {
+        Preconditions.checkNotNull(databaseName);
+        databaseName = getFullDatabaseName(databaseName);
+
+        registerDatabase(databaseName);
+        return new SyncRegistration(plugin, databaseName);
     }
 }

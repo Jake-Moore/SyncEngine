@@ -1,14 +1,17 @@
 package com.kamikazejam.syncengine;
 
 import com.google.common.base.Preconditions;
+import com.kamikazejam.syncengine.base.Cache;
+import com.kamikazejam.syncengine.base.SyncCache;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-// TODO this should be the API entry point for each plugin
-//  devs should be able to obtain this object from SyncEngineAPI
-//  and use it to register caches and other services they need
-@Getter
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter @SuppressWarnings("unused")
 public class SyncRegistration {
     private final @NotNull JavaPlugin plugin;
     /**
@@ -24,5 +27,25 @@ public class SyncRegistration {
         Preconditions.checkNotNull(databaseName);
         this.plugin = plugin;
         this.databaseName = databaseName;
+    }
+
+    private final List<Cache<?,?>> caches = new ArrayList<>();
+    public void registerCache(Class<? extends SyncCache<?,?>> clazz) {
+        // Find a constructor that takes a SyncRegistration
+        try {
+            Constructor<? extends SyncCache<?,?>> constructor = clazz.getConstructor(SyncRegistration.class);
+            SyncCache<?,?> cache = constructor.newInstance(this);
+            this.caches.add(cache);
+            cache.getLoggerService().info("Cache Registered.");
+        } catch (NoSuchMethodException ex1) {
+            SyncEnginePlugin.get().getLogger().severe("Failed to register cache " + clazz.getName() + " - No constructor that takes a SyncRegistration");
+        } catch (Throwable t) {
+            SyncEnginePlugin.get().getLogger().severe("Failed to register cache " + clazz.getName() + " - " + t.getClass().getName() + ": " + t.getMessage());
+        }
+    }
+
+    public void shutdown() {
+        caches.forEach(Cache::shutdown);
+        caches.clear();
     }
 }

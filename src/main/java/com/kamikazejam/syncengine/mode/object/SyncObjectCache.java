@@ -40,7 +40,8 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
 
         // Start this cache
         if (!start()) {
-            syncPlugin.getLogger().severe("Failed to start Profile Cache: " + name);
+            // Data loss is not tolerated in SyncEngine, shutdown to prevent issues
+            syncPlugin.getLogger().severe("Failed to start Object Cache: " + name);
             Bukkit.getServer().shutdown();
         }
     }
