@@ -35,8 +35,7 @@ public abstract class SyncObject implements Sync<String> {
     protected transient @Nullable Long readOnlyTimeStamp = null;
 
     // For Morphia
-    public SyncObject() {
-    }
+    public SyncObject() {}
 
     public SyncObject(SyncObjectCache cache) {
         this.cache = cache;

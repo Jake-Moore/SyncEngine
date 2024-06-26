@@ -50,6 +50,10 @@ public class SyncEngineAPI {
      * to allow multiple sync group networks to operate on the same MongoDB server
      */
     public static @NotNull String getFullDatabaseName(String dbName) {
+        // Just in case, don't add the sync group twice
+        if (dbName.startsWith(SyncEnginePlugin.get().getSyncGroup() + "_")) {
+            return dbName;
+        }
         return SyncEnginePlugin.get().getSyncGroup() + "_" + dbName;
     }
 
@@ -92,9 +96,8 @@ public class SyncEngineAPI {
      */
     public static SyncRegistration register(@NotNull JavaPlugin plugin, @NotNull String databaseName) throws DuplicateDatabaseException {
         Preconditions.checkNotNull(databaseName);
-        databaseName = getFullDatabaseName(databaseName);
 
-        registerDatabase(databaseName);
+        registerDatabase(getFullDatabaseName(databaseName));
         return new SyncRegistration(plugin, databaseName);
     }
 }

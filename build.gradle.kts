@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.kamikazejam"
-version = "0.0.7"
+version = "0.0.8"
 description = "A data storage and synchronization library for Spigot plugins."
 
 repositories {
@@ -59,8 +59,9 @@ tasks {
         archiveClassifier.set("")
         configurations = listOf(project.configurations.shadow.get())
         // Relocations
-        relocate("dev.morphia", "com.kamikazejam.syncengine.morphia")
-        relocate("io.lettuce.core", "com.kamikazejam.syncengine.lettuce.core")
+        relocate("dev.morphia", "shaded.com.kamikazejam.syncengine.morphia")
+        relocate("io.lettuce.core", "shaded.com.kamikazejam.syncengine.lettuce.core")
+        relocate("com.mongodb", "shaded.com.kamikazejam.syncengine.mongodb")
     }
 
     processResources {

@@ -167,6 +167,9 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     @NotNull
     String getDatabaseName();
 
+    @NotNull @ApiStatus.Internal
+    String getDbNameShort();
+
     /**
      * Converts a Cache key to a string. Key uniqueness should be maintained.
      */

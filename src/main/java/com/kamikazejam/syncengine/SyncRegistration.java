@@ -20,13 +20,15 @@ public class SyncRegistration {
      * All plugin caches will be stored in this database as collections
      */
     private final String databaseName;
+    private final String dbNameShort;
 
     // package-private because SyncEngine is the only one allowed to create this
-    SyncRegistration(@NotNull JavaPlugin plugin, @NotNull String databaseName) {
+    SyncRegistration(@NotNull JavaPlugin plugin, @NotNull String dbNameShort) {
         Preconditions.checkNotNull(plugin);
-        Preconditions.checkNotNull(databaseName);
+        Preconditions.checkNotNull(dbNameShort);
         this.plugin = plugin;
-        this.databaseName = databaseName;
+        this.dbNameShort = dbNameShort;
+        this.databaseName = SyncEngineAPI.getFullDatabaseName(dbNameShort);
     }
 
     private final List<Cache<?,?>> caches = new ArrayList<>();

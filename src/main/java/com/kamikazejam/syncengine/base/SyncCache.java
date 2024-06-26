@@ -192,6 +192,11 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     }
 
     @Override
+    public @NotNull String getDbNameShort() {
+        return registration.getDbNameShort();
+    }
+
+    @Override
     @ApiStatus.Internal
     public final void updateSyncFromNewer(@NotNull X sync, @NotNull X update) {
         Preconditions.checkNotNull(sync);

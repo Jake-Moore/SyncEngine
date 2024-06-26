@@ -50,6 +50,10 @@ public class SyncObjectLoader<X extends SyncObject> implements SyncLoader<X> {
                 this.cache.cache(p);
                 this.cache.getLoggerService().debug("Cached sync " + p.getIdentifier());
             }
+            // Ensure the Sync has its cache set
+            if (p != null) {
+                p.setCache(cache);
+            }
             return Optional.ofNullable(p);
         }
         return Optional.empty();
