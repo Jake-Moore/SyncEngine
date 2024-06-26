@@ -14,7 +14,7 @@ public class MorphiaUtil {
         }
         // Defaults for MorphiaConfig
         return morphiaConfig = MorphiaConfig.load()
-                .packages(List.of("com.kamikazejam.syncengine.entities.*"))
+                .packages(List.of("com.kamikazejam.syncengine.entity.*"))
                 .storeNulls(true)
                 .storeEmpties(true);
     }
