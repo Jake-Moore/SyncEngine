@@ -1,8 +1,8 @@
-name: Syncraft
-main: com.kamikazejam.syncraft.SyncraftPlugin
+name: SyncEngine
+main: com.kamikazejam.syncengine.SyncEnginePlugin
 version: ${version}
 authors: [KamikazeJAM]
-website: https://github.com/Jake-Moore/Syncraft
+website: https://github.com/Jake-Moore/SyncEngine
 description: ${description}
 api-version: 1.13
 depend:

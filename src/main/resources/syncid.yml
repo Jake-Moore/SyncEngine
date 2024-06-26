@@ -1,8 +1,8 @@
 #
-# Syncraft
+# SyncEngine
 #
 #
-# This option stores the unique identifier for this instance of Syncraft on this server.
+# This option stores the unique identifier for this instance of SyncEngine on this server.
 #  It is used for NETWORKED mode to distinguish between instances.
 # It will be generated automatically on first boot
 sync-id: null

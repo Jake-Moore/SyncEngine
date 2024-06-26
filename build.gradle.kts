@@ -59,8 +59,8 @@ tasks {
         archiveClassifier.set("")
         configurations = listOf(project.configurations.shadow.get())
         // Relocations
-        relocate("dev.morphia", "com.kamikazejam.syncraft.morphia")
-        relocate("io.lettuce.core", "com.kamikazejam.syncraft.lettuce.core")
+        relocate("dev.morphia", "com.kamikazejam.syncengine.morphia")
+        relocate("io.lettuce.core", "com.kamikazejam.syncengine.lettuce.core")
     }
 
     processResources {
