@@ -69,10 +69,17 @@ tasks {
             "name" to rootProject.name,
             "version" to project.version,
             "description" to project.description,
-            "date" to DateTimeFormatter.ISO_INSTANT.format(Instant.now())
+            "date" to DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
+            "kamicommonVersion" to kamiCommonVer,
         )
         inputs.properties(props)
         filesMatching("plugin.yml") {
+            expand(props)
+        }
+        filesMatching("**/properties.json") {
+            expand(props)
+        }
+        filesMatching("**/version.json") {
             expand(props)
         }
     }

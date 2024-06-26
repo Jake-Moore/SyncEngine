@@ -1,6 +1,11 @@
 #
 # Syncraft
 #
-# This file stores the unique identifier for this instance of Syncraft on this server.
-#  It is used for NETWORKED mode to distinguish between instances.
 #
+# This option stores the unique identifier for this instance of Syncraft on this server.
+#  It is used for NETWORKED mode to distinguish between instances.
+# It will be generated automatically on first boot
+sync-id: null
+# This option can be configured to group multiple instances together. If two servers have different groups
+#  none of their data will be shared or synchronized. That requires the same sync-group
+sync-group: global
