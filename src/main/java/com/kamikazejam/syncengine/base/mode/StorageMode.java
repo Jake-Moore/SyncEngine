@@ -2,8 +2,8 @@ package com.kamikazejam.syncengine.base.mode;
 
 import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.SyncEnginePlugin;
-import com.kamikazejam.syncengine.connections.storage.FileService;
-import com.kamikazejam.syncengine.connections.storage.MongoService;
+import com.kamikazejam.syncengine.connections.storage.FileStorage;
+import com.kamikazejam.syncengine.connections.storage.MongoStorage;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,36 +49,36 @@ public enum StorageMode {
     //                         STORAGE SERVICE MANAGEMENT                           //
     // ---------------------------------------------------------------------------- //
 
-    private MongoService mongoService = null;
+    private MongoStorage mongoStorage = null;
 
-    private @NotNull MongoService getMongoService() {
+    private @NotNull MongoStorage getMongoService() {
         Preconditions.checkState(this == StorageMode.MONGODB, "MongoService is only available in MONGODB storage mode");
-        if (mongoService == null) {
-            mongoService = new MongoService();
-            mongoService.start();
+        if (mongoStorage == null) {
+            mongoStorage = new MongoStorage();
+            mongoStorage.start();
         }
-        return mongoService;
+        return mongoStorage;
     }
 
-    private FileService fileService = null;
+    private FileStorage fileStorage = null;
 
-    private @NotNull FileService getFileService() {
+    private @NotNull FileStorage getFileService() {
         Preconditions.checkState(this == StorageMode.FILE, "FileService is only available in FILE storage mode");
-        if (fileService == null) {
-            fileService = new FileService();
-            fileService.start();
+        if (fileStorage == null) {
+            fileStorage = new FileStorage();
+            fileStorage.start();
         }
-        return fileService;
+        return fileStorage;
     }
 
     public void disableServices() {
-        if (mongoService != null) {
-            mongoService.shutdown();
-            mongoService = null;
+        if (mongoStorage != null) {
+            mongoStorage.shutdown();
+            mongoStorage = null;
         }
-        if (fileService != null) {
-            fileService.shutdown();
-            fileService = null;
+        if (fileStorage != null) {
+            fileStorage.shutdown();
+            fileStorage = null;
         }
     }
 }

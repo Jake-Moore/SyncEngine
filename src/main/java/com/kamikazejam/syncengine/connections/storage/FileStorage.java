@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Optional;
 
 @SuppressWarnings("unnused")
-public class FileService extends StorageService {
+public class FileStorage extends StorageService {
     private boolean running = false;
 
-    public FileService() {}
+    public FileStorage() {}
 
     // ------------------------------------------------- //
     //                 StorageService                    //

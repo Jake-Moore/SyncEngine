@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.kamikazejam"
-version = "0.0.8"
+version = "0.1.0"
 description = "A data storage and synchronization library for Spigot plugins."
 
 repositories {

@@ -1,6 +1,6 @@
 package com.kamikazejam.syncengine.connections.monitor;
 
-import com.kamikazejam.syncengine.connections.storage.MongoService;
+import com.kamikazejam.syncengine.connections.storage.MongoStorage;
 import com.mongodb.event.ServerHeartbeatFailedEvent;
 import com.mongodb.event.ServerHeartbeatStartedEvent;
 import com.mongodb.event.ServerHeartbeatSucceededEvent;
@@ -9,9 +9,9 @@ import org.jetbrains.annotations.NotNull;
 
 public class MongoMonitor implements ServerMonitorListener {
 
-    private final MongoService service;
+    private final MongoStorage service;
 
-    public MongoMonitor(MongoService service) {
+    public MongoMonitor(MongoStorage service) {
         this.service = service;
     }
 

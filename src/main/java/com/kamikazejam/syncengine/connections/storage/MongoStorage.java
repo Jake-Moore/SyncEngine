@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 
 @Getter
 @SuppressWarnings("unused")
-public class MongoService extends StorageService {
+public class MongoStorage extends StorageService {
     private boolean running = false;
     @Setter
     private boolean mongoInitConnect = false;
@@ -43,7 +43,7 @@ public class MongoService extends StorageService {
     @Getter(AccessLevel.NONE)
     private MongoClient mongoClient = null;
 
-    public MongoService() {
+    public MongoStorage() {
     }
 
     // ------------------------------------------------- //
@@ -248,7 +248,7 @@ public class MongoService extends StorageService {
 
     @Override
     public String getLoggerName() {
-        return "MongoService";
+        return "MongoStorage";
     }
 
 
