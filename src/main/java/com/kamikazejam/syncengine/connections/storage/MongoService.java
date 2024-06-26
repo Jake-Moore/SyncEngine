@@ -234,7 +234,7 @@ public class MongoService extends StorageService {
 
 
     // ------------------------------------------------- //
-    //                   ErrorService                    //
+    //                   LoggerService                   //
     // ------------------------------------------------- //
     @Override
     public boolean isDebug() {

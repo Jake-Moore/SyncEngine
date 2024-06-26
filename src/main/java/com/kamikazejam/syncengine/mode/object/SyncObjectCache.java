@@ -5,7 +5,10 @@ import com.kamikazejam.kamicommon.util.KUtil;
 import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
+import com.kamikazejam.syncengine.base.error.CacheLoggerService;
+import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
+import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.mode.object.store.ObjectStoreDatabase;
 import com.kamikazejam.syncengine.mode.object.store.ObjectStoreLocal;
@@ -29,19 +32,17 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     private final StoreMethods<String, X> databaseStore = new ObjectStoreDatabase<>(this);
 
     public SyncObjectCache(SyncRegistration module, SyncInstantiator<String, X> instantiator, String name, Class<X> syncClass) {
-        super(instantiator, name, String.class, syncClass, module);
-        setupModule();
+        // Optional Constructor that will use the default CacheLoggerService
+        this(module, instantiator, name, syncClass, CacheLoggerService::new);
+    }
+    public SyncObjectCache(SyncRegistration module, SyncInstantiator<String, X> instantiator, String name, Class<X> syncClass, CacheLoggerInstantiator logger) {
+        super(instantiator, name, String.class, syncClass, module, logger);
 
         // Start this cache
         if (!start()) {
             syncPlugin.getLogger().severe("Failed to start Profile Cache: " + name);
             Bukkit.getServer().shutdown();
         }
-    }
-
-    @Override
-    protected void setupModule() {
-        super.setupModule();
     }
 
     @Override
@@ -60,7 +61,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
 //            }
 //        });
 //        if (failedSaves.get() > 0) {
-//            errorService.info(failedSaves + " objects failed to save during shutdown");
+//            loggerService.info(failedSaves + " objects failed to save during shutdown");
 //            success = false;
 //        }
 
@@ -216,4 +217,27 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
         return localStore.has(key) || databaseStore.has(key);
     }
 
+    @Override
+    public Optional<X> getFromCache(@NotNull String key) {
+        return localStore.get(key);
+    }
+
+    @Override
+    public Optional<X> getFromDatabase(@NotNull String key, boolean cacheSync) {
+        Optional<X> o = databaseStore.get(key);
+        if (cacheSync) {
+            o.ifPresent(this::cache);
+        }
+        return o;
+    }
+
+    @Override
+    public void setLoggerService(@NotNull LoggerService loggerService) {
+        this.loggerService = loggerService;
+    }
+
+    @Override
+    public long getLocalCacheSize() {
+        return localStore.size();
+    }
 }

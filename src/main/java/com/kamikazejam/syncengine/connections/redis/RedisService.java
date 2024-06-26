@@ -125,7 +125,7 @@ public class RedisService extends LoggerService implements Service {
 
 
     // ------------------------------------------------- //
-    //                   ErrorService                    //
+    //                   LoggerService                   //
     // ------------------------------------------------- //
     @Override
     public boolean isDebug() {

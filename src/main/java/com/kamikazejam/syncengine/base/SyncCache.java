@@ -5,9 +5,9 @@ import com.kamikazejam.kamicommon.util.KUtil;
 import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.SyncEnginePlugin;
 import com.kamikazejam.syncengine.SyncRegistration;
-import com.kamikazejam.syncengine.base.error.CacheLoggerService;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
+import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
 import com.kamikazejam.syncengine.update.SyncUpdater;
@@ -44,7 +44,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     protected boolean debug = true;
     protected boolean running = false;
 
-    public SyncCache(SyncInstantiator<K, X> instantiator, String name, Class<K> key, Class<X> syncClass, SyncRegistration registration) {
+    public SyncCache(SyncInstantiator<K, X> instantiator, String name, Class<K> key, Class<X> syncClass, SyncRegistration registration, CacheLoggerInstantiator logger) {
         this.instantiator = instantiator;
         this.name = name;
         this.keyClass = key;
@@ -52,10 +52,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         this.registration = registration;
         this.plugin = registration.getPlugin();
         this.syncPlugin = SyncEnginePlugin.get();
-    }
-
-    protected void setupModule() {
-        this.loggerService = new CacheLoggerService(this);
+        this.loggerService = logger.instantiate(this);
     }
 
     /**

@@ -125,7 +125,7 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     /**
      * Sets the {@link LoggerService} for this cache.
      */
-    void setErrorService(@NotNull LoggerService loggerService);
+    void setLoggerService(@NotNull LoggerService loggerService);
 
     /**
      * Saves all Sync objects in this cache to the database.
@@ -215,7 +215,7 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     /**
      * Get the number of Sync objects currently stored locally in this cache
      */
-    int getCacheSize();
+    long getLocalCacheSize();
 
     /**
      * Creates a new Sync object with a random key.

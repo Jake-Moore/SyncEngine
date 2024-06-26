@@ -118,7 +118,7 @@ public class FileService extends StorageService {
     }
 
     // ------------------------------------------------- //
-    //                   ErrorService                    //
+    //                   LoggerService                   //
     // ------------------------------------------------- //
     @Override
     public boolean isDebug() {
