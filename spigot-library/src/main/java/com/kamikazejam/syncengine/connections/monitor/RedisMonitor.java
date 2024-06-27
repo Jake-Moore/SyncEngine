@@ -1,6 +1,6 @@
 package com.kamikazejam.syncengine.connections.monitor;
 
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import org.bukkit.Bukkit;
@@ -18,7 +18,7 @@ public class RedisMonitor implements Runnable, Service {
     @Override
     public boolean start() {
         if (this.task == null) {
-            this.task = Bukkit.getScheduler().runTaskTimerAsynchronously(PluginSource.get(), this, 0L, 20L);
+            this.task = Bukkit.getScheduler().runTaskTimerAsynchronously(EngineSource.get(), this, 0L, 20L);
         } else {
             throw new IllegalStateException("Redis Monitor is already running: cannot start");
         }

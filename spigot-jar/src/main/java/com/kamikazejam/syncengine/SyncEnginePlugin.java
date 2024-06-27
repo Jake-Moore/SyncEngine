@@ -16,11 +16,11 @@ public class SyncEnginePlugin extends KamiPlugin {
 
     @Override
     public void onEnableInner() {
-        PluginSource.onEnable(this);
+        EngineSource.onEnable(this);
     }
 
     @Override
     public void onDisableInner() {
-        PluginSource.onDisable();
+        EngineSource.onDisable();
     }
 }

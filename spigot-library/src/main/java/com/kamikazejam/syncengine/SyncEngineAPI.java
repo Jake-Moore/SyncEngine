@@ -51,31 +51,31 @@ public class SyncEngineAPI {
      */
     public static @NotNull String getFullDatabaseName(String dbName) {
         // Just in case, don't add the sync group twice
-        if (dbName.startsWith(PluginSource.getSyncServerGroup() + "_")) {
+        if (dbName.startsWith(EngineSource.getSyncServerGroup() + "_")) {
             return dbName;
         }
-        return PluginSource.getSyncServerGroup() + "_" + dbName;
+        return EngineSource.getSyncServerGroup() + "_" + dbName;
     }
 
     /**
      * Gets the sync ID of this server.
      */
     public static @NotNull String getSyncServerID() {
-        return PluginSource.getSyncServerId();
+        return EngineSource.getSyncServerId();
     }
 
     /**
      * Gets the sync group of this server.
      */
     public static @NotNull String getSyncServerGroup() {
-        return PluginSource.getSyncServerGroup();
+        return EngineSource.getSyncServerGroup();
     }
 
     /**
      * @return if SyncEngine is in debug mode
      */
     public static boolean isDebug() {
-        return PluginSource.isDebug();
+        return EngineSource.isDebug();
     }
 
     public static void registerDatabase(String databaseName) throws DuplicateDatabaseException {

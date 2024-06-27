@@ -2,7 +2,7 @@ package com.kamikazejam.syncengine.base;
 
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.util.KUtil;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.error.LoggerService;
@@ -52,7 +52,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         this.syncClass = syncClass;
         this.registration = registration;
         this.plugin = registration.getPlugin();
-        this.syncPlugin = PluginSource.get();
+        this.syncPlugin = EngineSource.get();
         this.loggerService = logger.instantiate(this);
     }
 
@@ -64,7 +64,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
      */
     @Override
     public final boolean start() {
-        StorageService storageService = PluginSource.getStorageService();
+        StorageService storageService = EngineSource.getStorageService();
         // Start the Database if Necessary
         if (!storageService.isRunning() && !storageService.start()) {
             loggerService.warn("[SyncCache.start] Failed to start Storage Service for cache: " + name);

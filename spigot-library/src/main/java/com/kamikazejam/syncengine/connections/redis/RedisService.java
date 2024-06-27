@@ -1,6 +1,6 @@
 package com.kamikazejam.syncengine.connections.redis;
 
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.connections.config.RedisConf;
@@ -129,12 +129,12 @@ public class RedisService extends LoggerService implements Service {
     // ------------------------------------------------- //
     @Override
     public boolean isDebug() {
-        return PluginSource.isDebug();
+        return EngineSource.isDebug();
     }
 
     @Override
     public Plugin getPlugin() {
-        return PluginSource.get();
+        return EngineSource.get();
     }
 
     @Override

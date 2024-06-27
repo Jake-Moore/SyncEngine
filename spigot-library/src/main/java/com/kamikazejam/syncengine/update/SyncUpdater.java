@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.update;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.Sync;
@@ -39,7 +39,7 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
     public boolean start() {
         Preconditions.checkState(!running, "SyncUpdater is already running for cache: " + cache.getName());
 
-        @Nullable RedisService redisService = PluginSource.getRedisService();
+        @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService == null) {
             // Do nothing if we don't have a RedisService
             return running = true;
@@ -89,7 +89,7 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
     }
 
     private void receiveUpdateRequest(@NotNull String msg) {
-        @Nullable ServerService serverService = PluginSource.getServerService();
+        @Nullable ServerService serverService = EngineSource.getServerService();
         if (serverService == null) {
             // Do nothing if we don't have a ServerService
             return;
@@ -132,7 +132,7 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
                 }));
             }
         } catch (IllegalPluginAccessException e) {
-            if (!PluginSource.get().isEnabled()) {
+            if (!EngineSource.get().isEnabled()) {
                 return;
             }
             cache.getLoggerService().info(e, "Error2 with received update request in SyncUpdater for packet: " + msg);
@@ -144,8 +144,8 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
 
     // Default: force=false, async=true
     public boolean pushUpdate(@NotNull X sync, boolean force, boolean async) {
-        @Nullable RedisService redisService = PluginSource.getRedisService();
-        @Nullable ServerService serverService = PluginSource.getServerService();
+        @Nullable RedisService redisService = EngineSource.getRedisService();
+        @Nullable ServerService serverService = EngineSource.getServerService();
         if (redisService == null || serverService == null) {
             // Do nothing if we don't have one of the NETWORKED services
             return true;

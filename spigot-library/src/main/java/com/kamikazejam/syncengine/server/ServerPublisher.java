@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.server;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.server.event.SyncServerPublishJoinEvent;
 import com.kamikazejam.syncengine.server.event.SyncServerPublishPingEvent;
@@ -20,13 +20,13 @@ public class ServerPublisher {
     }
 
     public void publishPing(@NotNull String dbName) {
-        @Nullable RedisService redisService = PluginSource.getRedisService();
+        @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService == null) {
             // Do nothing, we aren't running NETWORKED
             return;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(PluginSource.get(), () -> {
+        Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
             try {
                 String syncID = serverService.getThisServer().getName();
                 String syncGroup = serverService.getThisServer().getGroup();
@@ -44,7 +44,7 @@ public class ServerPublisher {
     }
 
     public void publishJoin(@NotNull String dbName) {
-        @Nullable RedisService redisService = PluginSource.getRedisService();
+        @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService == null) {
             // Do nothing, we aren't running NETWORKED
             return;
@@ -56,7 +56,7 @@ public class ServerPublisher {
         Preconditions.checkNotNull(ServerEvent.JOIN.getEvent(), "Join event");
         Preconditions.checkNotNull(serverService.getThisServer(), "thisServer");
         Preconditions.checkNotNull(serverService.getThisServer().getName(), "thisServer#name");
-        Bukkit.getScheduler().runTaskAsynchronously(PluginSource.get(), () -> {
+        Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
             try {
                 String syncID = serverService.getThisServer().getName();
                 String syncGroup = serverService.getThisServer().getGroup();
@@ -75,13 +75,13 @@ public class ServerPublisher {
 
     // Sync Method
     public void publishQuit(@NotNull String dbName, boolean callIsSync) {
-        @Nullable RedisService redisService = PluginSource.getRedisService();
+        @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService == null) {
             // Do nothing, we aren't running NETWORKED
             return;
         }
 
-        PluginSource.info("Publishing QUIT event for server " + serverService.getThisServer().getName());
+        EngineSource.info("Publishing QUIT event for server " + serverService.getThisServer().getName());
 
         try {
             // Run sync to ensure publish completes before shutdown
@@ -95,7 +95,7 @@ public class ServerPublisher {
             if (callIsSync) {
                 Bukkit.getPluginManager().callEvent(event);
             } else {
-                Bukkit.getScheduler().runTask(PluginSource.get(), () -> Bukkit.getPluginManager().callEvent(event));
+                Bukkit.getScheduler().runTask(EngineSource.get(), () -> Bukkit.getPluginManager().callEvent(event));
             }
 
         } catch (Exception ex) {

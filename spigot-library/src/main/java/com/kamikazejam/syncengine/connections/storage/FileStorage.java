@@ -1,6 +1,6 @@
 package com.kamikazejam.syncengine.connections.storage;
 
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.connections.storage.iterable.SyncIterable;
@@ -134,12 +134,12 @@ public class FileStorage extends StorageService {
     // ------------------------------------------------- //
     @Override
     public boolean isDebug() {
-        return PluginSource.isDebug();
+        return EngineSource.isDebug();
     }
 
     @Override
     public Plugin getPlugin() {
-        return PluginSource.get();
+        return EngineSource.get();
     }
 
     @Override
@@ -162,7 +162,7 @@ public class FileStorage extends StorageService {
     //                 Helper Methods                    //
     // ------------------------------------------------- //
     private <K, X extends Sync<K>> File getCacheFolder(Cache<K, X> cache) {
-        File storageFolder = PluginSource.getStorageMode().getFileStorageFolder();
+        File storageFolder = EngineSource.getStorageMode().getFileStorageFolder();
         // Can use short db name since we have a local file system, no need for collision avoidance with the group name
         return new File(storageFolder + File.separator + cache.getDbNameShort() + File.separator + cache.getName());
     }

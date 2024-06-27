@@ -21,7 +21,7 @@ import java.io.File;
 import java.util.UUID;
 
 @SuppressWarnings("unused")
-public class PluginSource {
+public class EngineSource {
     private static @Nullable KamiPlugin pluginSource;
     private static boolean enabled = false;
     private static final SyncEngineCommand command = new SyncEngineCommand();

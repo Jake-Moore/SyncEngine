@@ -40,9 +40,9 @@ public class SyncRegistration {
             this.caches.add(cache);
             cache.getLoggerService().info("Cache Registered.");
         } catch (NoSuchMethodException ex1) {
-            PluginSource.error("Failed to register cache " + clazz.getName() + " - No constructor that takes a SyncRegistration");
+            EngineSource.error("Failed to register cache " + clazz.getName() + " - No constructor that takes a SyncRegistration");
         } catch (Throwable t) {
-            PluginSource.error("Failed to register cache " + clazz.getName() + " - " + t.getClass().getName() + ": " + t.getMessage());
+            EngineSource.error("Failed to register cache " + clazz.getName() + " - " + t.getClass().getName() + ": " + t.getMessage());
         }
     }
 

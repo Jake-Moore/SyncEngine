@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.connections.storage;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.connections.config.MongoConf;
@@ -241,12 +241,12 @@ public class MongoStorage extends StorageService {
     // ------------------------------------------------- //
     @Override
     public boolean isDebug() {
-        return PluginSource.isDebug();
+        return EngineSource.isDebug();
     }
 
     @Override
     public Plugin getPlugin() {
-        return PluginSource.get();
+        return EngineSource.get();
     }
 
     @Override

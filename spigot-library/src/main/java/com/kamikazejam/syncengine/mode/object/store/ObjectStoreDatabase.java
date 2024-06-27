@@ -1,6 +1,6 @@
 package com.kamikazejam.syncengine.mode.object.store;
 
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.store.SyncStore;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
@@ -22,7 +22,7 @@ public class ObjectStoreDatabase<X extends SyncObject> extends SyncStore<String,
 
     public ObjectStoreDatabase(SyncObjectCache<X> cache) {
         super(cache);
-        this.storageService = PluginSource.getStorageService();
+        this.storageService = EngineSource.getStorageService();
     }
 
     @Override

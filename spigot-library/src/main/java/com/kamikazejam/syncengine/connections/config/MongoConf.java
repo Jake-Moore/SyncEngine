@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.connections.config;
 
 import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,7 +22,7 @@ public class MongoConf {
         }
 
         // Load Config Values
-        KamiConfig config = PluginSource.getConfig();
+        KamiConfig config = EngineSource.getConfig();
         String uri = config.getString("connections.MONGODB.uri", null);
         return conf = new MongoConf(uri);
     }

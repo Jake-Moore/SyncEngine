@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.base.mode;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.storage.FileStorage;
 import com.kamikazejam.syncengine.connections.storage.MongoStorage;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
@@ -31,14 +31,14 @@ public enum StorageMode {
 
     public @NotNull File getFileStorageFolder() {
         if (relativePath == null) {
-            relativePath = PluginSource.get().getConfig().getString("connections.FILE.directoryName", "data");
+            relativePath = EngineSource.get().getConfig().getString("connections.FILE.directoryName", "data");
         }
-        File file = new File(PluginSource.get().getDataFolder(), relativePath);
+        File file = new File(EngineSource.get().getDataFolder(), relativePath);
         if (!file.exists() && !file.mkdirs()) {
             throw new RuntimeException("Failed to create data directory: " + file.getAbsolutePath());
         }
         if (!file.isDirectory()) {
-            file = new File(PluginSource.get().getDataFolder(), "data");
+            file = new File(EngineSource.get().getDataFolder(), "data");
             boolean ignored = file.mkdirs();
         }
         return file;

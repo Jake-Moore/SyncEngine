@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.server;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
@@ -42,13 +42,13 @@ public class ServerService extends LoggerService implements Runnable, Service {
     private boolean running = false;
 
     public ServerService() {
-        this.plugin = PluginSource.get();
-        this.thisServer = new SyncServer(PluginSource.getSyncServerId(), PluginSource.getSyncServerGroup(), System.currentTimeMillis(), true);
+        this.plugin = EngineSource.get();
+        this.thisServer = new SyncServer(EngineSource.getSyncServerId(), EngineSource.getSyncServerGroup(), System.currentTimeMillis(), true);
         this.syncServerMap.put(thisServer.getName(), thisServer);
     }
 
     public boolean start() {
-        @Nullable RedisService redisService = PluginSource.getRedisService();
+        @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService == null) {
             // Do nothing if we don't have a RedisService (i.e. we are not NETWORKED)
             return true;
@@ -84,7 +84,7 @@ public class ServerService extends LoggerService implements Runnable, Service {
                         SyncServerPacket packet = SyncServerPacket.fromJSON(patternMessage.getMessage());
                         if (event != null && packet != null) {
                             // Check that this redis message is for us
-                            if (!packet.getSyncGroup().equalsIgnoreCase(PluginSource.getSyncServerGroup())) {
+                            if (!packet.getSyncGroup().equalsIgnoreCase(EngineSource.getSyncServerGroup())) {
                                 return;
                             }
 
@@ -249,6 +249,6 @@ public class ServerService extends LoggerService implements Runnable, Service {
 
     @Override
     public boolean isDebug() {
-        return PluginSource.isDebug();
+        return EngineSource.isDebug();
     }
 }

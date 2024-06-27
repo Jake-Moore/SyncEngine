@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.connections.config;
 
 import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
-import com.kamikazejam.syncengine.PluginSource;
+import com.kamikazejam.syncengine.EngineSource;
 import io.lettuce.core.RedisURI;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +41,7 @@ public class RedisConf {
             return conf;
         }
 
-        KamiConfig config = PluginSource.getConfig();
+        KamiConfig config = EngineSource.getConfig();
 
         // Load Config Values
         String address = config.getString("connections.REDIS.address");
