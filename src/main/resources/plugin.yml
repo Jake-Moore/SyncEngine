@@ -5,5 +5,3 @@ authors: [KamikazeJAM]
 website: https://github.com/Jake-Moore/SyncEngine
 description: ${description}
 api-version: 1.13
-depend:
-  - KamiCommon
