@@ -6,3 +6,5 @@ pluginManagement {
 }
 
 rootProject.name = "SyncEngine"
+include("spigot-jar")
+include("spigot-library")

@@ -1,5 +1,7 @@
-import java.time.Instant
-import java.time.format.DateTimeFormatter
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+@Suppress("PropertyName")
+val VERSION = "0.3.0"
 
 plugins {
     id("java")
@@ -8,138 +10,80 @@ plugins {
     id("maven-publish")
 }
 
-group = "com.kamikazejam"
-version = "0.2.1"
-description = "A data storage and synchronization library for Spigot plugins."
+// Disable root project build
+tasks.jar.get().enabled = false
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven("https://nexus.luxiouslabs.net/public")
+// Export KamiCommonVer for use in all subprojects
+val kamiCommonVer = "3.0.4.0"
+ext {
+    set("kamiCommonVer", kamiCommonVer)
 }
 
-val kamiCommonVer = "3.0.3.9"
-dependencies {
-    // Spigot (from public nexus)
-    compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
+allprojects {
+    group = "com.kamikazejam.syncengine"
+    version = VERSION
+    description = "A data storage and synchronization library for Spigot plugins."
 
-    // Internal Libraries
-    shadow("org.mongojack:mongojack:5.0.0")
-    shadow("io.lettuce:lettuce-core:6.3.2.RELEASE")
-    // KamiCommon (spigot utils) - for MultiVersion support
-    shadow("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven("https://nexus.luxiouslabs.net/public")
+    }
 
-    // Annotation Processors
-    //   Lombok
-    compileOnly("org.projectlombok:lombok:1.18.32")
-    annotationProcessor("org.projectlombok:lombok:1.18.32")
-    testCompileOnly("org.projectlombok:lombok:1.18.32")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
-    //   JetBrains
-    compileOnly("org.jetbrains:annotations:24.1.0")
+    // We want UTF-8 for everything
+    tasks.withType<JavaCompile> {
+        options.encoding = Charsets.UTF_8.name()
+    }
+    tasks.withType<Javadoc> {
+        options.encoding = Charsets.UTF_8.name()
+    }
 }
 
-// We want UTF-8 for everything
-tasks.withType<JavaCompile> {
-    options.encoding = Charsets.UTF_8.name()
-}
-tasks.withType<Javadoc> {
-    options.encoding = Charsets.UTF_8.name()
-}
+subprojects {
+    apply(plugin = "java")
+    apply(plugin = "java-library")
+    apply(plugin = "io.github.goooler.shadow")
+    apply(plugin = "maven-publish")
 
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-}
+    // All modules use Java 21
+    java {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    }
 
-// Register a task to delete the jars in the libs folder
-tasks.register<Delete>("cleanLibs") {
-    delete("build/libs")
+    dependencies {
+        // Spigot (from public nexus)
+        compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
+
+        // Annotation Processors
+        //   Lombok
+        compileOnly("org.projectlombok:lombok:1.18.32")
+        annotationProcessor("org.projectlombok:lombok:1.18.32")
+        testCompileOnly("org.projectlombok:lombok:1.18.32")
+        testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
+        //   JetBrains
+        compileOnly("org.jetbrains:annotations:24.1.0")
+    }
+
+    // Register a task to delete the jars in the libs folder
+    tasks.register<Delete>("cleanLibs") {
+        delete("build/libs")
+    }
+
+    // Define
+    tasks.withType<ShadowJar> {
+        // Do Not minimize -> messes up the spigot-jar which may need those classes
+        // Apply common settings to all shadow jars
+        archiveClassifier.set("")
+        configurations = listOf(project.configurations.shadow.get())
+    }
 }
 
 tasks {
-    build.get().dependsOn(shadowJar)
-    shadowJar.get().dependsOn("cleanLibs")
-
-    shadowJar {
-        minimize()
-        archiveClassifier.set("")
-        configurations = listOf(project.configurations.shadow.get())
-        // Relocations
-        relocate("com.fasterxml.jackson", "shaded.com.kamikazejam.syncengine.jackson")
-        relocate("io.lettuce.core", "shaded.com.kamikazejam.syncengine.lettuce.core")
-        relocate("com.mongodb", "shaded.com.kamikazejam.syncengine.mongodb")
-        relocate("com.kamikazejam.kamicommon", "shaded.com.kamikazejam.syncengine.kc")
-        // TODO Other relocations that didn't get picked-up in the script below
-//        relocate("org.bson", "shaded.com.kamikazejam.syncengine.bson")
-//        relocate("nonapi.io.github.classgraph", "shaded.com.kamikazejam.syncengine.classgraph")
-//        relocate("reactor", "shaded.com.kamikazejam.syncengine.reactor")
-//        relocate("javax.annotation", "shaded.com.kamikazejam.syncengine.javax.annotation")
-//        relocate("org.jetbrains.annotations", "shaded.com.kamikazejam.syncengine.jetbrains.annotations")
-//        relocate("org.objectweb.asm", "shaded.com.kamikazejam.syncengine.objectweb.asm")
-//        relocate("edu.umd", "shaded.com.kamikazejam.syncengine.edu.umd")
-
-        // Dynamically relocate all dependencies
+    build.get().dependsOn("forceModuleBuild")
+    // Define a custom task to fail the build with a message
+    register("forceModuleBuild") {
         doFirst {
-            project.configurations.getByName("shadow").resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
-                val moduleId = artifact.moduleVersion.id
-                val originalPackage = moduleId.group.replace('.', '/')
-                val targetPackage = "shaded/com/kamikazejam/syncengine/libs/$originalPackage"
-                relocate(originalPackage, targetPackage)
-            }
-        }
-    }
-
-    processResources {
-        filteringCharset = Charsets.UTF_8.name()
-        val props = mapOf(
-            "name" to rootProject.name,
-            "version" to project.version,
-            "description" to project.description,
-            "date" to DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
-            "kamicommonVersion" to kamiCommonVer,
-        )
-        inputs.properties(props)
-        filesMatching("plugin.yml") {
-            expand(props)
-        }
-        filesMatching("**/version.json") {
-            expand(props)
-        }
-    }
-}
-
-// Publishing to Nexus
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            groupId = rootProject.group.toString()
-            artifactId = project.name
-            version = rootProject.version.toString()
-            from(components["java"])
-
-            // Customize the generated POM
-            pom.withXml {
-                val dependenciesNode = asNode().appendNode("dependencies")
-                project.configurations.getByName("shadow").dependencies.forEach {
-                    val dependencyNode = dependenciesNode.appendNode("dependency")
-                    dependencyNode.appendNode("groupId", it.group)
-                    dependencyNode.appendNode("artifactId", it.name)
-                    dependencyNode.appendNode("version", it.version)
-                }
-
-                // Remove the shaded dependencies from the POM
-                asNode().remove(dependenciesNode)
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            url = uri("https://nexus.luxiouslabs.net/private/")
-            credentials {
-                username = System.getenv("LUXIOUS_NEXUS_USER")
-                password = System.getenv("LUXIOUS_NEXUS_PASS")
-            }
+            throw GradleException("\n\n*****\nPlease use the build.sh script instead of ./gradlew build !\n*****\n\n")
         }
     }
 }
