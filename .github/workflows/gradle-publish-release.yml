@@ -1,0 +1,85 @@
+name: Gradle Publish & Release
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Access to Publish a Release
+      packages: write # Access to Publish a Package
+
+    #--------------------------------------------------------------------------------------------
+    #           Build the Artifact and Publish to Luxious Repository
+    #--------------------------------------------------------------------------------------------
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+          settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+      # Configure Gradle for optimal use in GiHub Actions, including caching of downloaded dependencies.
+      # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
+        with:
+          gradle-version: '8.7'
+
+      - name: Build with Gradle 8.7
+        if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
+        env:
+          LUXIOUS_NEXUS_USER: ${{ secrets.LUXIOUS_NEXUS_USER }}
+          LUXIOUS_NEXUS_PASS: ${{ secrets.LUXIOUS_NEXUS_PASS }}
+        run: |
+          chmod +x ./publish.sh
+          ./publish.sh gradle
+
+      - name: Prepare Spigot Jar
+        if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
+        run: |
+          mv spigot-jar/build/libs/spigot-jar-${{ steps.extract_version.outputs.version }}.jar spigot-jar/build/libs/SyncEngine-${{ steps.extract_version.outputs.version }}.jar
+
+      #--------------------------------------------------------------------------------------------
+      #           Create a Github Release
+      #--------------------------------------------------------------------------------------------
+      - name: Extract Version from Gradle
+        id: extract_version
+        run: |
+          version=$(awk -F'"' '/var VERSION =/{print $2}' build.gradle.kts)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Display Version
+        run: echo "Version is ${{ steps.extract_version.outputs.version }}"
+
+      - name: Create Release (Spigot Jar + Module Jars)
+        if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "spigot-jar/build/libs/*.jar"
+          allowUpdates: true
+          removeArtifacts: true
+          omitBodyDuringUpdate: true
+          omitDraftDuringUpdate: true
+          omitNameDuringUpdate: true
+          omitPrereleaseDuringUpdate: true
+          tag: "${{ steps.extract_version.outputs.version }}"
+
+      # Update the README.md Badge with the new version
+      - name: Create Version Badge
+        if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ef2ddc2a6021074d1b5d032aafa1c849
+          filename: version.json # Use test.svg if you want to use the SVG mode.
+          label: Latest Release
+          message: "${{ steps.extract_version.outputs.version }}"
+          color: blue

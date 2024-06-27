@@ -1,3 +1,8 @@
+&nbsp;
+> <a href="https://github.com/Jake-Moore/SyncEngine/releases/latest"> <img alt="Latest Release" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/Jake-Moore/ef2ddc2a6021074d1b5d032aafa1c849/raw/version.json" /></a>
+>
+> The GitHub release may be different from latest on the Maven repository.
+
 # SyncEngine
 A data storage and synchronization library for Spigot plugins.  
 Inspired by Jonah Seguin's [Payload](https://github.com/jonahseguin/Payload) project.

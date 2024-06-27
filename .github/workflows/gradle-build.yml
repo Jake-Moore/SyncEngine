@@ -1,0 +1,42 @@
+name: Gradle Build (on pull_request)
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    #--------------------------------------------------------------------------------------------
+    #           Build the Artifact (verify nothing broke)
+    #--------------------------------------------------------------------------------------------
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
+          settings-path: ${{ github.workspace }} # location for the settings.xml file
+
+      # Configure Gradle for optimal use in GiHub Actions, including caching of downloaded dependencies.
+      # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
+        with:
+          gradle-version: '8.7'
+
+      - name: Build with Gradle 8.7
+        env:
+          LUXIOUS_NEXUS_USER: ${{ secrets.LUXIOUS_NEXUS_USER }}
+          LUXIOUS_NEXUS_PASS: ${{ secrets.LUXIOUS_NEXUS_PASS }}
+        run: |
+          chmod +x ./build.sh
+          ./build.sh gradle
