@@ -366,15 +366,4 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 //    public Optional<NetworkProfile> getNetworked(@NotNull UUID key) {
 //        return getNetworkService().get(key);
 //    }
-
-
-    private X emptySync = null;
-
-    @Override
-    public @NotNull X getEmptySync() {
-        if (emptySync == null) {
-            emptySync = this.create();
-        }
-        return emptySync;
-    }
 }
