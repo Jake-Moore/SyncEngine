@@ -98,9 +98,6 @@ tasks {
         filesMatching("plugin.yml") {
             expand(props)
         }
-        filesMatching("**/properties.json") {
-            expand(props)
-        }
         filesMatching("**/version.json") {
             expand(props)
         }

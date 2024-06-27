@@ -12,7 +12,6 @@ import com.kamikazejam.syncengine.command.SyncEngineCommand;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
 import com.kamikazejam.syncengine.server.ServerService;
-import com.kamikazejam.syncengine.util.DependencyChecker;
 import lombok.Getter;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -42,13 +41,6 @@ public class SyncEnginePlugin extends KamiPlugin {
     @Override
     public void onEnableInner() {
         instance = this;
-
-        // Verify Dependencies
-        if (!DependencyChecker.isSatisfied(this)) {
-            getLogger().severe("Failed to verify dependencies. (see above)");
-            getPluginLoader().disablePlugin(this);
-            return;
-        }
 
         // Load KamiCommon and some other time-consuming tasks
         SpigotUtilProvider.setPlugin(this);
