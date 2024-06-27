@@ -126,7 +126,7 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
             final K identifier = cache.keyFromString(identifierString);
             if (cache.isCached(identifier) || force) {
                 cache.runAsync(() -> cache.getFromDatabase(identifier, true).ifPresent(sync -> {
-                    cache.getLoggerService().debug("Received update request in SyncUpdater for " + cache.getName() + ":" + cache.keyToString(sync.getIdentifier()) + " version: " + sync.getVersion());
+                    cache.getLoggerService().debug("Received update request in SyncUpdater for " + cache.getName() + ":" + cache.keyToString(sync.getId()) + " version: " + sync.getVersion());
 
                     cache.cache(sync);
                 }));
@@ -156,7 +156,7 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
             final Document document = new Document();
             document.append(KEY_SOURCE_SERVER, serverService.getThisServer().getName());
             document.append(KEY_SOURCE_GROUP, serverService.getThisServer().getGroup());
-            document.append(KEY_IDENTIFIER, cache.keyToString(sync.getIdentifier()));
+            document.append(KEY_IDENTIFIER, cache.keyToString(sync.getId()));
             document.append(KEY_FORCE_LOAD, force);
             final String json = document.toJson();
             if (async) {
@@ -172,7 +172,7 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
             }
             return false;
         } catch (Exception ex) {
-            cache.getLoggerService().info(ex, "Failed to push update from SyncUpdater for Sync: " + cache.keyToString(sync.getIdentifier()));
+            cache.getLoggerService().info(ex, "Failed to push update from SyncUpdater for Sync: " + cache.keyToString(sync.getId()));
             return false;
         }
     }

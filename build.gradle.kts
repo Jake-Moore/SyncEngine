@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.kamikazejam"
-version = "0.1.1"
+version = "0.2.0"
 description = "A data storage and synchronization library for Spigot plugins."
 
 repositories {
@@ -24,9 +24,8 @@ dependencies {
     compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
 
     // Internal Libraries
-    shadow("dev.morphia.morphia:morphia-core:2.4.14")
+    shadow("org.mongojack:mongojack:5.0.0")
     shadow("io.lettuce:lettuce-core:6.3.2.RELEASE")
-    shadow("com.google.code.gson:gson:2.11.0")
     // KamiCommon (spigot utils) - for MultiVersion support
     shadow("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
 
@@ -60,19 +59,18 @@ tasks {
         archiveClassifier.set("")
         configurations = listOf(project.configurations.shadow.get())
         // Relocations
-        relocate("dev.morphia", "shaded.com.kamikazejam.syncengine.morphia")
+        relocate("com.fasterxml.jackson", "shaded.com.kamikazejam.syncengine.jackson")
         relocate("io.lettuce.core", "shaded.com.kamikazejam.syncengine.lettuce.core")
         relocate("com.mongodb", "shaded.com.kamikazejam.syncengine.mongodb")
-        relocate("com.google.gson", "shaded.com.kamikazejam.syncengine.google.gson")
         relocate("com.kamikazejam.kamicommon", "shaded.com.kamikazejam.syncengine.kc")
-        // Other relocations that didn't get picked-up in the script below
-        relocate("org.bson", "shaded.com.kamikazejam.syncengine.bson")
-        relocate("nonapi.io.github.classgraph", "shaded.com.kamikazejam.syncengine.classgraph")
-        relocate("reactor", "shaded.com.kamikazejam.syncengine.reactor")
-        relocate("javax.annotation", "shaded.com.kamikazejam.syncengine.javax.annotation")
-        relocate("org.jetbrains.annotations", "shaded.com.kamikazejam.syncengine.jetbrains.annotations")
-        relocate("org.objectweb.asm", "shaded.com.kamikazejam.syncengine.objectweb.asm")
-        relocate("edu.umd", "shaded.com.kamikazejam.syncengine.edu.umd")
+        // TODO Other relocations that didn't get picked-up in the script below
+//        relocate("org.bson", "shaded.com.kamikazejam.syncengine.bson")
+//        relocate("nonapi.io.github.classgraph", "shaded.com.kamikazejam.syncengine.classgraph")
+//        relocate("reactor", "shaded.com.kamikazejam.syncengine.reactor")
+//        relocate("javax.annotation", "shaded.com.kamikazejam.syncengine.javax.annotation")
+//        relocate("org.jetbrains.annotations", "shaded.com.kamikazejam.syncengine.jetbrains.annotations")
+//        relocate("org.objectweb.asm", "shaded.com.kamikazejam.syncengine.objectweb.asm")
+//        relocate("edu.umd", "shaded.com.kamikazejam.syncengine.edu.umd")
 
         // Dynamically relocate all dependencies
         doFirst {

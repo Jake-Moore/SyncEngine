@@ -1,7 +1,6 @@
 package com.kamikazejam.syncengine.mode.object;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.kamicommon.util.KUtil;
 import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
@@ -18,11 +17,13 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 @Getter
 @SuppressWarnings("unused")
@@ -115,7 +116,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     @Override
     public @NotNull X create(@NotNull String id) {
         X o = super.create();
-        o.setIdentifier(id);
+        o.setId(id);
         o.setCache(this);
         // Cache and save this object
         cache(o);
@@ -168,26 +169,40 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
 
     @NotNull
     @Override
-    public Set<X> getAll(boolean cacheSyncs) {
-        // Fetch all local objects
-        final Set<X> all = new HashSet<>(localStore.getAll());
-        // Fetch all mongo objects
-        all.addAll(databaseStore.getAll().stream()
-                .filter(x -> all.stream().noneMatch(x2 -> x.getIdentifier().equals(x2.getIdentifier())))
-                .peek(x -> {
-                    x.setCache(this);
-                    if (cacheSyncs) {
-                        this.cache(x);
-                    }
-                })
-                .collect(Collectors.toSet()));
-        return all;
-    }
+    public Iterable<X> getAll(boolean cacheSyncs) {
+        // Create an Iterable that iterates through all database objects, and updates local objects as necessary
+        Iterator<X> databaseIterable = databaseStore.getAll().iterator();
+        return () -> new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+                // This Iterable extends the database Iterable
+                return databaseIterable.hasNext();
+            }
 
-    @NotNull
-    @Override
-    public List<X> getAll(boolean cacheSyncs, Comparator<? super X> orderBy) {
-        return KUtil.transform(this.getAll(cacheSyncs), orderBy);
+            @Override
+            public X next() {
+                // Load the next database object
+                @NotNull X next = databaseIterable.next();
+
+                // Load the local object, and if it exists -> update it from newer (database ver)
+                Optional<X> o = localStore.get(next.getId());
+                o.ifPresent(sync -> {
+                    // Don't attempt to load database version if its older
+                    if (next.getVersion() < sync.getVersion()) { return; }
+                    SyncObjectCache.this.updateSyncFromNewer(sync, next);
+                });
+                // Find the sync object to return
+                @NotNull X sync = o.orElse(next);
+
+                // Verify it has the correct cache and cache it if necessary
+                next.setCache(SyncObjectCache.this);
+                if (o.isEmpty() && cacheSyncs) {
+                    // Won't call updateSyncFromNewer since o is empty
+                    SyncObjectCache.this.cache(next);
+                }
+                return sync;
+            }
+        };
     }
 
     @Override

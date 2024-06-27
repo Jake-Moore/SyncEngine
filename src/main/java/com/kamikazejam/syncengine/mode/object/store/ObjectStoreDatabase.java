@@ -8,8 +8,8 @@ import com.kamikazejam.syncengine.mode.object.SyncObject;
 import com.kamikazejam.syncengine.mode.object.SyncObjectCache;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Wraps up the StorageService with the Cache backing the Syncs, and exposes ObjectStore methods
@@ -67,8 +67,13 @@ public class ObjectStoreDatabase<X extends SyncObject> extends SyncStore<String,
     }
 
     @Override
-    protected @NotNull Collection<X> getAll(Cache<String, X> cache) {
+    protected @NotNull Iterable<X> getAll(Cache<String, X> cache) {
         return storageService.getAll(cache);
+    }
+
+    @Override
+    public @NotNull Set<String> getKeys() {
+        return storageService.getKeys(cache);
     }
 
     @Override

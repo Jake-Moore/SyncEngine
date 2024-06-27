@@ -16,8 +16,8 @@ public class CmdInfo extends KamiCommand {
     public void perform() {
         sender.sendMessage(StringUtil.t("&7--- &6SyncEngine Information&7---"));
         sender.sendMessage(StringUtil.t("&7Unique SyncEngine-ID for this server:"));
-        sender.sendMessage(StringUtil.t("  &6" + SyncEnginePlugin.get().getSyncId()));
+        sender.sendMessage(StringUtil.t("  &6" + SyncEnginePlugin.get().getSyncServerId()));
         sender.sendMessage(StringUtil.t("&7SyncEngine Group:"));
-        sender.sendMessage(StringUtil.t("  &6" + SyncEnginePlugin.get().getSyncGroup()));
+        sender.sendMessage(StringUtil.t("  &6" + SyncEnginePlugin.get().getSyncServerGroup()));
     }
 }

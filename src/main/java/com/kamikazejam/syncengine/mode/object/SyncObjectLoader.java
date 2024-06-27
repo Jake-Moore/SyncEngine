@@ -48,7 +48,7 @@ public class SyncObjectLoader<X extends SyncObject> implements SyncLoader<X> {
             X p = sync.get();
             if (saveToLocalCache && p != null && !loadedFromLocal) {
                 this.cache.cache(p);
-                this.cache.getLoggerService().debug("Cached sync " + p.getIdentifier());
+                this.cache.getLoggerService().debug("Cached sync " + p.getId());
             }
             // Ensure the Sync has its cache set
             if (p != null) {
@@ -61,7 +61,7 @@ public class SyncObjectLoader<X extends SyncObject> implements SyncLoader<X> {
 
     @Override
     public void uncache(@NotNull Player player, @NotNull X sync, boolean switchingServers) {
-        if (cache.isCached(sync.getIdentifier())) {
+        if (cache.isCached(sync.getId())) {
             cache.uncache(sync);
         }
     }

@@ -5,7 +5,6 @@ import com.kamikazejam.syncengine.base.Sync;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -36,7 +35,7 @@ public abstract class SyncStore<K, X extends Sync<K>> implements StoreMethods<K,
     protected abstract boolean remove(Cache<K, X> cache, @NotNull K key);
 
     @NotNull
-    protected abstract Collection<X> getAll(Cache<K, X> cache);
+    protected abstract Iterable<X> getAll(Cache<K, X> cache);
 
     protected abstract long size(Cache<K, X> cache);
 
@@ -61,7 +60,7 @@ public abstract class SyncStore<K, X extends Sync<K>> implements StoreMethods<K,
 
     @Override
     public boolean has(@NotNull X sync) {
-        return this.has(this.cache, sync.getIdentifier());
+        return this.has(this.cache, sync.getId());
     }
 
     @Override
@@ -71,11 +70,11 @@ public abstract class SyncStore<K, X extends Sync<K>> implements StoreMethods<K,
 
     @Override
     public boolean remove(@NotNull X sync) {
-        return this.remove(this.cache, sync.getIdentifier());
+        return this.remove(this.cache, sync.getId());
     }
 
     @Override
-    public @NotNull Collection<X> getAll() {
+    public @NotNull Iterable<X> getAll() {
         return this.getAll(this.cache);
     }
 

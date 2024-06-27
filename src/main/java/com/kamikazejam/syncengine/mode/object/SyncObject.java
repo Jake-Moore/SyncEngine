@@ -1,47 +1,61 @@
 package com.kamikazejam.syncengine.mode.object;
 
-import com.kamikazejam.syncengine.SyncEngineAPI;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
-import dev.morphia.annotations.Id;
-import dev.morphia.annotations.Property;
-import dev.morphia.annotations.Version;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Getter
 @Setter
 @SuppressWarnings({"rawtypes", "unchecked", "unused"})
 public abstract class SyncObject implements Sync<String> {
-    protected transient SyncObjectCache cache;
+    // ----------------------------------------------------- //
+    //                        Fields                         //
+    // ----------------------------------------------------- //
+    // The id of this object (as a user-defined String)
+    @JsonProperty("_id")
+    private @NotNull String syncId = UUID.randomUUID().toString();
 
-    @Property("syncId")
-    protected String syncId;
-
-    @Id
-    protected String identifier;
-
-    // Implement Optimistic Locking
-    @Version
+    // TODO Implement Optimistic Locking
+    @JsonProperty("version")
     protected long version = 0;
 
-    protected transient long handshakeStartTimestamp = 0;
 
+    // ----------------------------------------------------- //
+    //                      Transients                       //
+    // ----------------------------------------------------- //
+    protected transient SyncObjectCache cache;
+    protected transient long handshakeStartTimestamp = 0;
     protected transient @Nullable Long readOnlyTimeStamp = null;
 
-    // For Morphia
-    public SyncObject() {}
 
+    // ----------------------------------------------------- //
+    //                     Constructors                      //
+    // ----------------------------------------------------- //
+    // For Jackson
+    public SyncObject() {}
+    public SyncObject(@NotNull String syncId) {
+        this.syncId = syncId;
+    }
     public SyncObject(SyncObjectCache cache) {
         this.cache = cache;
-        this.syncId = SyncEngineAPI.getSyncID();
+    }
+    public SyncObject(@NotNull String syncId, SyncObjectCache cache) {
+        this.syncId = syncId;
+        this.cache = cache;
     }
 
+
+    // ----------------------------------------------------- //
+    //                        Methods                        //
+    // ----------------------------------------------------- //
     @Override
     public boolean hasValidHandshake() {
         if (handshakeStartTimestamp > 0) {
@@ -76,39 +90,29 @@ public abstract class SyncObject implements Sync<String> {
     @Override
     public int hashCode() {
         int result = 1;
-        Object $id = this.getIdentifier();
+        Object $id = this.getId();
         result = result * 59 + ($id == null ? 43 : $id.hashCode());
         return result;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (!(o instanceof SyncObject other)) {
-            return false;
-        }
-        if (this.identifier == null || other.identifier == null) {
-            return false;
-        }
-        return Objects.equals(this.identifier, other.identifier);
-    }
-
-    @NotNull
-    @Override
-    public String identifierFieldName() {
-        return "identifier";
+        if (o == this) { return true; }
+        if (!(o instanceof SyncObject other)) { return false; }
+        return Objects.equals(this.syncId, other.syncId);
     }
 
     @Override
     public String getId() {
-        return getIdentifier();
+        return this.syncId;
     }
 
+    @Override
+    public void setId(@NotNull String id) {
+        this.syncId = id;
+    }
 
     private transient boolean initialized = false;
-
     @Override
     public final void initialized() {
         if (!initialized) {
@@ -123,7 +127,6 @@ public abstract class SyncObject implements Sync<String> {
 
 
     private transient boolean uninitialized = false;
-
     @Override
     public final void uninitialized() {
         if (!uninitialized) {

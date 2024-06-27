@@ -3,28 +3,22 @@ package com.kamikazejam.syncengine.connections.storage;
 import com.kamikazejam.syncengine.SyncEnginePlugin;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
-import com.kamikazejam.syncengine.util.MorphiaUtil;
-import com.mongodb.MongoClientSettings;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import dev.morphia.Datastore;
-import dev.morphia.Morphia;
-import dev.morphia.mapping.codec.pojo.MorphiaCodec;
-import dev.morphia.mapping.codec.reader.DocumentReader;
+import com.kamikazejam.syncengine.connections.storage.iterable.SyncIterable;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.bson.BsonDocumentWrapper;
-import org.bson.Document;
-import org.bson.UuidRepresentation;
-import org.bson.codecs.DecoderContext;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.kamikazejam.syncengine.util.JacksonUtil.getMapper;
 
 @SuppressWarnings("unnused")
 public class FileStorage extends StorageService {
@@ -97,10 +91,23 @@ public class FileStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> Collection<X> getAll(Cache<K, X> cache) {
-        return List.of();
+    public <K, X extends Sync<K>> Iterable<X> getAll(Cache<K, X> cache) {
+        return new SyncIterable<>(cache, getCacheFolder(cache).toPath());
     }
 
+    @Override
+    public <K, X extends Sync<K>> Set<K> getKeys(Cache<K, X> cache) {
+        @Nullable File[] files = getCacheFolder(cache).listFiles();
+        if (files == null) { return Set.of(); }
+
+        // Stream all files in the folder, filter out nulls, map to the key, and collect to a set
+        return Arrays.stream(files)
+                .filter(Objects::nonNull)
+                // Cut the .json off the file name
+                .map((f) -> f.getName().substring(0, f.getName().lastIndexOf('.')))
+                .map(cache::keyFromString)
+                .collect(Collectors.toSet());
+    }
 
     // ------------------------------------------------- //
     //                 Service Methods                   //
@@ -140,19 +147,16 @@ public class FileStorage extends StorageService {
         return "FileStorage";
     }
 
-    public static <K, X extends Sync<K>> String toJson(X sync) {
-        // After a ton of digging, this appears to be the MongoDB operation that is used to save a document
-        return BsonDocumentWrapper.asBsonDocument(sync, getDatastore().getCodecRegistry()).toJson();
+    @SneakyThrows
+    public static <K, X extends Sync<K>> @NotNull String toJson(X sync) {
+        return getMapper().writeValueAsString(sync);
     }
 
+    @SneakyThrows
     public static <K, X extends Sync<K>> @Nullable X fromJson(Class<X> clazz, @Nullable String json) {
         if (json == null) { return null; }
-
-        // Now we have to find a method to convert the json to the Profile again
-        MorphiaCodec<X> codec = (MorphiaCodec<X>) getDatastore().getCodecRegistry().get(clazz);
-        return codec.decode(new DocumentReader(Document.parse(json)), DecoderContext.builder().build());
+        return getMapper().readValue(json, clazz);
     }
-
 
     // ------------------------------------------------- //
     //                 Helper Methods                    //
@@ -165,18 +169,5 @@ public class FileStorage extends StorageService {
 
     private <K, X extends Sync<K>> File getTargetFile(Cache<K, X> cache, K key) {
         return new File(getCacheFolder(cache), cache.keyToString(key) + ".json");
-    }
-
-
-    private static @Nullable Datastore datastore;
-    public static @NotNull Datastore getDatastore() {
-        // A Datastore with a MongoClient that doesn't connect to anything (let's hope it works)
-        if (datastore == null)  {
-            MongoClient client = MongoClients.create(MongoClientSettings.builder()
-                    .uuidRepresentation(UuidRepresentation.STANDARD)
-                    .build());
-            datastore = Morphia.createDatastore(client, MorphiaUtil.getMorphiaConfig());
-        }
-        return datastore;
     }
 }

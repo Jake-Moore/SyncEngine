@@ -4,8 +4,8 @@ import com.kamikazejam.syncengine.base.Sync;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 @SuppressWarnings({"UnusedReturnValue", "rawtypes", "unused"})
 public interface StoreMethods<K, X extends Sync> {
@@ -48,7 +48,13 @@ public interface StoreMethods<K, X extends Sync> {
      * Retrieve all Syncs from this store.
      */
     @NotNull
-    Collection<X> getAll();
+    Iterable<X> getAll();
+
+    /**
+     * Retrieve all Sync keys from this store.
+     */
+    @NotNull
+    Set<String> getKeys();
 
     /**
      * Clear all Syncs from this store. No Syncs are deleted, just removed from memory.

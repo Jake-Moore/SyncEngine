@@ -42,7 +42,7 @@ public class ServerService extends LoggerService implements Runnable, Service {
 
     public ServerService() {
         this.plugin = SyncEnginePlugin.get();
-        this.thisServer = new SyncServer(plugin.getSyncId(), plugin.getSyncGroup(), System.currentTimeMillis(), true);
+        this.thisServer = new SyncServer(plugin.getSyncServerId(), plugin.getSyncServerGroup(), System.currentTimeMillis(), true);
         this.syncServerMap.put(thisServer.getName(), thisServer);
     }
 
@@ -83,7 +83,7 @@ public class ServerService extends LoggerService implements Runnable, Service {
                         SyncServerPacket packet = SyncServerPacket.fromJSON(patternMessage.getMessage());
                         if (event != null && packet != null) {
                             // Check that this redis message is for us
-                            if (!packet.getSyncGroup().equalsIgnoreCase(plugin.getSyncGroup())) {
+                            if (!packet.getSyncGroup().equalsIgnoreCase(plugin.getSyncServerGroup())) {
                                 return;
                             }
 

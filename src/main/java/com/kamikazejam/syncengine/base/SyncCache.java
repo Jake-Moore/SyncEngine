@@ -160,10 +160,10 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     public boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async) {
         Preconditions.checkNotNull(sync, "Sync cannot be null for pushUpdate");
         if (updater != null) {
-            loggerService.debug("PUSH " + keyToString(sync.getIdentifier()) + " (v" + sync.getVersion() + "): Force=" + forceLoad);
+            loggerService.debug("PUSH " + keyToString(sync.getId()) + " (v" + sync.getVersion() + "): Force=" + forceLoad);
             return updater.pushUpdate(sync, forceLoad, async);
         } else {
-            loggerService.info("Couldn't pushUpdate for Sync " + keyToString(sync.getIdentifier()) + ": SyncUpdater is null!");
+            loggerService.info("Couldn't pushUpdate for Sync " + keyToString(sync.getId()) + ": SyncUpdater is null!");
             return false;
         }
     }
@@ -204,7 +204,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 
         // Load the version from the update sync (IFF it's newer)
         if (update.getVersion() < sync.getVersion()) {
-            throw new IllegalStateException("[" + getName() + "] Update Sync is OLDER? Loading: " + keyToString(sync.getIdentifier()) + " from v" + sync.getVersion() + " to v" + update.getVersion());
+            throw new IllegalStateException("[" + getName() + "] Update Sync is OLDER? Loading: " + keyToString(sync.getId()) + " from v" + sync.getVersion() + " to v" + update.getVersion());
         }
         sync.setVersion(update.getVersion());
         sync.load(update);
@@ -220,7 +220,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         cache(sync);
         boolean mongo = getDatabaseStore().save(sync);
         if (!mongo) {
-            loggerService.info("Failed to save Sync " + keyToString(sync.getIdentifier()));
+            loggerService.info("Failed to save Sync " + keyToString(sync.getId()));
         }
 
         // Push update so other servers can load the new data
@@ -251,7 +251,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     @Override
     public void cache(@NotNull X sync) {
         Preconditions.checkNotNull(sync);
-        Optional<X> o = getLocalStore().get(sync.getIdentifier());
+        Optional<X> o = getLocalStore().get(sync.getId());
         if (o.isPresent()) {
             updateSyncFromNewer(o.get(), sync);
         } else {

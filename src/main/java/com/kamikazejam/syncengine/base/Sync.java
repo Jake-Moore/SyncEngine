@@ -39,15 +39,7 @@ public interface Sync<K> {
     void beforeUninitialized();
 
     /**
-     * Gets the unique identifier of our Sync. This can be a String, UUID, or any another type.
-     * It just needs to be unique and able to be used as a key in a HashMap.
-     *
-     * @return K Identifier
-     */
-    K getIdentifier();
-
-    /**
-     * Gets the unique identifier of our Sync. This can be a String, UUID, or any another type.
+     * Gets the unique identifier of our Sync. This can be a String representation of anything (like a UUID).
      * It just needs to be unique and able to be used as a key in a HashMap.
      *
      * @return K Identifier
@@ -55,7 +47,13 @@ public interface Sync<K> {
     K getId();
 
     /**
-     * Gets the field name that {@link #getIdentifier()} uses (the field in the superclass)
+     * Sets the unique identifier of our Sync. This can be a String representation of anything (like a UUID).
+     * It just needs to be unique and able to be used as a key in a HashMap.
+     */
+    void setId(@NotNull K id);
+
+    /**
+     * Gets the field name that {@link #getId()} uses (the field in the superclass)
      * This is used for MongoDB lookups, it must be correct for proper functionality.
      *
      * @return field name

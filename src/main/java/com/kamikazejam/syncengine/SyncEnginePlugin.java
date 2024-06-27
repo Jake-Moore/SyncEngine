@@ -34,8 +34,8 @@ public class SyncEnginePlugin extends KamiPlugin {
     private SyncEngineCommand command;
     private SyncMode syncMode;
     private StorageMode storageMode;
-    private String syncId;
-    private String syncGroup;
+    private String syncServerId;
+    private String syncServerGroup;
     private StorageService storageService;
 
     @Override
@@ -54,12 +54,12 @@ public class SyncEnginePlugin extends KamiPlugin {
         storageService = storageMode.getStorageService();
 
         // Load Sync ID
-        KamiConfig syncConf = new KamiConfig(this, new File(getDataFolder(), "syncid.yml"), true);
-        syncId = syncConf.getString("sync-id", null);
-        syncGroup = syncConf.getString("sync-group", "global");
-        if (syncId == null || syncId.equalsIgnoreCase("null")) {
-            syncId = UUID.randomUUID().toString();
-            syncConf.set("sync-id", syncId);
+        KamiConfig syncConf = new KamiConfig(this, new File(getDataFolder(), "server.yml"), true);
+        syncServerId = syncConf.getString("sync-server-id", null);
+        syncServerGroup = syncConf.getString("sync-server-group", "global");
+        if (syncServerId == null || syncServerId.equalsIgnoreCase("null")) {
+            syncServerId = UUID.randomUUID().toString();
+            syncConf.set("sync-server-id", syncServerId);
             syncConf.save();
         }
 

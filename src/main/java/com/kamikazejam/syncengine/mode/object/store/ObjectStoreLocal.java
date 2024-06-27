@@ -7,8 +7,8 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -30,7 +30,7 @@ public class ObjectStoreLocal<X extends SyncObject> implements StoreMethods<Stri
     public boolean save(@NotNull X sync) {
         // If not called already, call initialized (since we're caching it)
         sync.initialized();
-        this.localCache.put(sync.getIdentifier().toLowerCase(), sync);
+        this.localCache.put(sync.getId().toLowerCase(), sync);
         return true;
     }
 
@@ -41,7 +41,7 @@ public class ObjectStoreLocal<X extends SyncObject> implements StoreMethods<Stri
 
     @Override
     public boolean has(@NotNull X sync) {
-        return this.has(sync.getIdentifier().toLowerCase());
+        return this.has(sync.getId().toLowerCase());
     }
 
     @Override
@@ -55,13 +55,19 @@ public class ObjectStoreLocal<X extends SyncObject> implements StoreMethods<Stri
 
     @Override
     public boolean remove(@NotNull X sync) {
-        return this.remove(sync.getIdentifier());
+        return this.remove(sync.getId());
     }
 
     @NotNull
     @Override
-    public Collection<X> getAll() {
+    public Iterable<X> getAll() {
         return this.localCache.values();
+    }
+
+    @NotNull
+    @Override
+    public Set<String> getKeys() {
+        return this.localCache.keySet();
     }
 
     @Override

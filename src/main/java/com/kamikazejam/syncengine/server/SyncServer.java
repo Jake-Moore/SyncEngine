@@ -1,12 +1,10 @@
 package com.kamikazejam.syncengine.server;
 
-import dev.morphia.annotations.Entity;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@Entity("SyncServer")
 @SuppressWarnings("unused")
 public class SyncServer {
 

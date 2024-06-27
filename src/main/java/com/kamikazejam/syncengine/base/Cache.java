@@ -12,7 +12,9 @@ import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -96,19 +98,11 @@ public interface Cache<K, X extends Sync<K>> extends Service {
 
     /**
      * Retrieves ALL Syncs from the database. Optionally caches them.
+     * @return An Iterable of all Syncs, for sequential processing.
      */
     @Blocking
     @NotNull
-    Collection<X> getAll(boolean cacheSyncs);
-
-    /**
-     * Retrieves ALL Syncs from the database, then sorts them by the comparator. Optionally caches them.
-     *
-     * @return a List to maintain order.
-     */
-    @Blocking
-    @NotNull
-    List<X> getAll(boolean cacheSyncs, Comparator<? super X> orderBy);
+    Iterable<X> getAll(boolean cacheSyncs);
 
     /**
      * Gets all Sync objects that are in this cache.

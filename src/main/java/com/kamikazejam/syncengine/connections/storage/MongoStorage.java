@@ -6,29 +6,24 @@ import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.connections.config.MongoConf;
 import com.kamikazejam.syncengine.connections.monitor.MongoMonitor;
-import com.kamikazejam.syncengine.util.MorphiaUtil;
 import com.mongodb.*;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import dev.morphia.Datastore;
-import dev.morphia.Morphia;
-import dev.morphia.VersionMismatchException;
-import dev.morphia.config.MorphiaConfig;
-import dev.morphia.query.Query;
-import dev.morphia.query.filters.Filters;
-import dev.morphia.query.filters.RegexFilter;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.bson.Document;
 import org.bson.UuidRepresentation;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.mongojack.JacksonMongoCollection;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.regex.Pattern;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import static com.kamikazejam.syncengine.util.JacksonUtil.ID_FIELD;
+import static com.kamikazejam.syncengine.util.JacksonUtil.getMapper;
 
 @Getter
 @SuppressWarnings("unused")
@@ -52,8 +47,8 @@ public class MongoStorage extends StorageService {
     @Override
     public boolean start() {
         this.debug("Connecting to MongoDB");
-        // Load MorphiaConfig on start-up
-        MorphiaUtil.getMorphiaConfig();
+        // Load Mapper on start-up
+        getMapper();
 
         boolean mongo = this.connectMongo();
         this.running = true;
@@ -96,8 +91,9 @@ public class MongoStorage extends StorageService {
     public @NotNull <K, X extends Sync<K>> Optional<X> get(Cache<K, X> cache, K key) {
         Preconditions.checkNotNull(key);
         try {
-            Query<X> q = getQuery(cache, key);
-            Optional<X> o = Optional.ofNullable(q.first());
+            Document query = new Document(ID_FIELD, cache.keyToString(key));
+            Optional<X> o = Optional.ofNullable(getJackson(cache).findOne(query));
+            // Initialize the object if it exists
             o.ifPresent(x -> {
                 x.setCache(cache);
                 x.initialized();
@@ -116,7 +112,8 @@ public class MongoStorage extends StorageService {
     public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) {
         // Try saving with Morphia/MongoDB and catch/fix a host of possible errors we can receive
         try {
-            getDatastore(cache).save(sync);
+            // TODO add optimistic versioning
+            getJackson(cache).save(sync);
             return true;
         } catch (MongoWriteException ex1) {
             // Handle the MongoWriteException
@@ -124,16 +121,12 @@ public class MongoStorage extends StorageService {
 
         } catch (MongoException ex) {
             // Log the MongoException (unknown Mongo error)
-            cache.getLoggerService().info(ex, "MongoDB error saving Object to MongoDB Layer: " + sync.getIdentifier());
+            cache.getLoggerService().info(ex, "MongoDB error saving Object to MongoDB Layer: " + sync.getId());
             return false;
-
-        } catch (VersionMismatchException ex2) {
-            // Handle the VersionMismatchException
-            return handleVersionMismatchException(ex2, cache, sync);
 
         } catch (Exception expected) {
             // Handle any other exception
-            cache.getLoggerService().info(expected, "Error saving Object to MongoDB Layer: " + sync.getIdentifier());
+            cache.getLoggerService().info(expected, "Error saving Object to MongoDB Layer: " + sync.getId());
             return false;
         }
     }
@@ -142,7 +135,8 @@ public class MongoStorage extends StorageService {
     public <K, X extends Sync<K>> boolean has(Cache<K, X> cache, K key) {
         Preconditions.checkNotNull(key);
         try {
-            return getQuery(cache, key).count() > 0;
+            Document query = new Document(ID_FIELD, cache.keyToString(key));
+            return getJackson(cache).countDocuments(query) > 0;
         } catch (MongoException ex) {
             cache.getLoggerService().info(ex, "MongoDB error check if Sync exists in MongoDB Layer: " + key);
             return false;
@@ -154,14 +148,15 @@ public class MongoStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>> long size(Cache<K, X> cache) {
-        return this.createQuery(cache).count();
+        return getJackson(cache).countDocuments();
     }
 
     @Override
     public <K, X extends Sync<K>> boolean remove(Cache<K, X> cache, K key) {
         Preconditions.checkNotNull(key);
         try {
-            return getQuery(cache, key).findAndDelete() != null;
+            Document query = new Document(ID_FIELD, cache.keyToString(key));
+            return getJackson(cache).deleteMany(query).getDeletedCount() > 0;
         } catch (MongoException ex) {
             cache.getLoggerService().info(ex, "MongoDB error removing Sync from MongoDB Layer: " + key);
         } catch (Exception expected) {
@@ -171,8 +166,17 @@ public class MongoStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> Collection<X> getAll(Cache<K, X> cache) {
-        return createQuery(cache).stream().toList();
+    public <K, X extends Sync<K>> Iterable<X> getAll(Cache<K, X> cache) {
+        return getJackson(cache).find();
+    }
+
+    @Override
+    public <K, X extends Sync<K>> Set<K> getKeys(Cache<K, X> cache) {
+        // TODO find a better way to get keys (without having to load the entire object)
+        Spliterator<X> spl = getJackson(cache).find().spliterator();
+        return StreamSupport.stream(spl, false)
+                .map(Sync::getId)
+                .collect(Collectors.toSet());
     }
 
     // ------------------------------------------------- //
@@ -209,27 +213,26 @@ public class MongoStorage extends StorageService {
 
 
     // ------------------------------------------------- //
-    //                 Morphia Datastore                 //
+    //                 Jackson Collection                //
     // ------------------------------------------------- //
     // Make each Datastore a singleton using a Map, so that we don't encounter errors like:
     //    "Two entities have been mapped using the same discriminator value"
-    private final Map<String, Datastore> datastoreMap = new HashMap<>();
+    private final Map<String, JacksonMongoCollection<?>> collMap = new HashMap<>();
 
-    public @NotNull Datastore getDatastore(Cache<?, ?> cache) {
+    @SuppressWarnings("unchecked")
+    public <K, X extends Sync<K>> @NotNull JacksonMongoCollection<X> getJackson(Cache<K, X> cache) {
         String databaseName = cache.getDatabaseName();
-        if (!datastoreMap.containsKey(databaseName)) {
-            MorphiaConfig config = MorphiaUtil.getMorphiaConfig()
-                    .database(databaseName); // creates a new instance with this database name
-
-            try {
-                SyncEnginePlugin.get().getLogger().info("Creating Datastore for database: " + databaseName);
-                Datastore ds = Morphia.createDatastore(mongoClient, config);
-                datastoreMap.put(databaseName, ds);
-            } catch (Throwable t) {
-                t.printStackTrace();
-            }
+        if (collMap.containsKey(databaseName)) {
+            return (JacksonMongoCollection<X>) collMap.get(databaseName);
         }
-        return datastoreMap.get(databaseName);
+
+        // Create a new JacksonMongoCollection
+        JacksonMongoCollection<X> coll = JacksonMongoCollection.builder()
+                .withObjectMapper(getMapper())
+                .build(mongoClient, databaseName, cache.getName(), cache.getSyncClass(), UuidRepresentation.STANDARD);
+
+        collMap.put(databaseName, coll);
+        return coll;
     }
 
 
@@ -260,33 +263,33 @@ public class MongoStorage extends StorageService {
         // There's a chance on start we may create and try to save an object that is being created by another instance
         //  at this very moment, in that case we should fetch the remote, and update our local copy with the remote
         if (ex.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
-            cache.getLoggerService().debug("Duplicate key error saving Object to MongoDB Layer: " + sync.getIdentifier());
+            cache.getLoggerService().debug("Duplicate key error saving Object to MongoDB Layer: " + sync.getId());
 
-            Optional<X> remote = cache.get(sync.getIdentifier());
+            Optional<X> remote = cache.get(sync.getId());
             if (remote.isPresent()) {
                 // If present, update local copy with remote data
-                cache.getLoggerService().debug("  Updating local Object with remote Object: " + sync.getIdentifier());
+                cache.getLoggerService().debug("  Updating local Object with remote Object: " + sync.getId());
                 cache.updateSyncFromNewer(sync, remote.get());
             } else {
                 // Otherwise remove from the cache since for some reason we couldn't fet remote
-                cache.getLoggerService().debug("  ERROR - key not found in remote, uncaching local Object: " + sync.getIdentifier());
+                cache.getLoggerService().debug("  ERROR - key not found in remote, uncaching local Object: " + sync.getId());
                 cache.uncache(sync);
             }
             return true;
         }
 
         // If not a duplicate key error, log it
-        cache.getLoggerService().info(ex, "MongoDB error0 saving Profile to MongoDB Layer: " + sync.getIdentifier());
+        cache.getLoggerService().info(ex, "MongoDB error0 saving Profile to MongoDB Layer: " + sync.getId());
         return false;
     }
 
-    private <K, X extends Sync<K>> boolean handleVersionMismatchException(VersionMismatchException ex, Cache<K, X> cache, X sync) {
-        // TODO uncomment
+    // Kept for reference when versioning is added back
+//    private <K, X extends Sync<K>> boolean handleVersionMismatchException(VersionMismatchException ex, Cache<K, X> cache, X sync) {
 //        String localJson = ProfileHandshakeService.toJson(cache, sync);
 //        String localErr = "Local Object: " + localJson;
 //
 //        AtomicReference<String> remoteErr = new AtomicReference<>("Remote Object: null");
-//        cache.get(sync.getIdentifier()).ifPresent(remote -> {
+//        cache.get(sync.getId()).ifPresent(remote -> {
 //            String remoteJson = ProfileHandshakeService.toJson(cache, remote);
 //            remoteErr.set("Remote Object: " + remoteJson);
 //
@@ -304,28 +307,6 @@ public class MongoStorage extends StorageService {
 //
 //        // Log debug if we couldn't save the object due to a versioning error (shouldn't happen, but log it in case)
 //        cache.getLoggerService().info(ex,  err);
-        return false;
-    }
-
-    public <K, X extends Sync<K>> Query<X> getQuery(Cache<K, X> cache, K key) {
-        Query<X> q = createQuery(cache);
-        Preconditions.checkNotNull(q, "Query is null");
-        Preconditions.checkNotNull(cache.getEmptySync(), "emptySync is null");
-        Preconditions.checkNotNull(cache.getEmptySync().identifierFieldName(), "identifierFieldName() is null for Sync Object: " + cache.getEmptySync().getClass().getSimpleName());
-        return createQueryQuoteExactInsensitive(cache, q, cache.getEmptySync().identifierFieldName(), key);
-    }
-
-    public <K, X extends Sync<K>> Query<X> createQuery(Cache<K, X> cache) {
-        return this.getDatastore(cache).find(cache.getSyncClass());
-    }
-
-    public <K, X extends Sync<K>> Query<X> createQueryQuoteExactInsensitive(Cache<K, X> cache, String fieldName, K value) {
-        return createQueryQuoteExactInsensitive(cache, createQuery(cache), fieldName, value);
-    }
-
-    public <K, X extends Sync<K>> Query<X> createQueryQuoteExactInsensitive(Cache<K, X> cache, Query<X> q, String fieldName, K key) {
-        String str = "^" + Pattern.quote(cache.keyToString(key)) + "$";
-        RegexFilter regexFilter = Filters.regex(fieldName, Pattern.compile(str));
-        return q.filter(regexFilter.caseInsensitive());
-    }
+//        return false;
+//    }
 }

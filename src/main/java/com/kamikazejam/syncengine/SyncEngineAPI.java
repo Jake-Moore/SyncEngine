@@ -51,24 +51,24 @@ public class SyncEngineAPI {
      */
     public static @NotNull String getFullDatabaseName(String dbName) {
         // Just in case, don't add the sync group twice
-        if (dbName.startsWith(SyncEnginePlugin.get().getSyncGroup() + "_")) {
+        if (dbName.startsWith(SyncEnginePlugin.get().getSyncServerGroup() + "_")) {
             return dbName;
         }
-        return SyncEnginePlugin.get().getSyncGroup() + "_" + dbName;
+        return SyncEnginePlugin.get().getSyncServerGroup() + "_" + dbName;
     }
 
     /**
      * Gets the sync ID of this server.
      */
-    public static @NotNull String getSyncID() {
-        return SyncEnginePlugin.get().getSyncId();
+    public static @NotNull String getSyncServerID() {
+        return SyncEnginePlugin.get().getSyncServerId();
     }
 
     /**
      * Gets the sync group of this server.
      */
-    public static @NotNull String getSyncGroup() {
-        return SyncEnginePlugin.get().getSyncGroup();
+    public static @NotNull String getSyncServerGroup() {
+        return SyncEnginePlugin.get().getSyncServerGroup();
     }
 
     /**
