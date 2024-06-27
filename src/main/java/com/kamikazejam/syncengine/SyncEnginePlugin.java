@@ -2,8 +2,6 @@ package com.kamikazejam.syncengine;
 
 import com.kamikazejam.kamicommon.KamiPlugin;
 import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
-import com.kamikazejam.kamicommon.gson.JsonObject;
-import com.kamikazejam.kamicommon.gson.JsonParser;
 import com.kamikazejam.kamicommon.util.Txt;
 import com.kamikazejam.syncengine.base.mode.StorageMode;
 import com.kamikazejam.syncengine.base.mode.SyncMode;
@@ -11,16 +9,13 @@ import com.kamikazejam.syncengine.command.SyncEngineCommand;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
 import com.kamikazejam.syncengine.server.ServerService;
+import com.kamikazejam.syncengine.util.DependencyChecker;
 import lombok.Getter;
-import org.bukkit.Bukkit;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Getter
@@ -46,7 +41,7 @@ public class SyncEnginePlugin extends KamiPlugin {
         instance = this;
 
         // Verify Dependencies
-        if (!verifyDependencies()) {
+        if (!DependencyChecker.isSatisfied(this)) {
             getLogger().severe("Failed to verify dependencies. (see above)");
             getPluginLoader().disablePlugin(this);
             return;
@@ -94,30 +89,6 @@ public class SyncEnginePlugin extends KamiPlugin {
     public boolean isDebug() {
         return getKamiConfig().getBoolean("debug");
     }
-
-    public boolean verifyDependencies() {
-        // Load the properties.json file
-        InputStream properties = getResource("properties.json");
-        if (properties == null) {
-            getLogger().severe("Could not find properties.json file");
-            Bukkit.getPluginManager().disablePlugin(this);
-            return false;
-        }
-        // Load the data from properties.json
-        JsonObject o = (JsonObject) JsonParser.parseReader(new InputStreamReader(properties, StandardCharsets.UTF_8));
-
-        // Verify KamiCommon Version
-        if (!verifyPluginVersion(o, "kamicommon.version", "KamiCommon", this::onVerFailure)) {
-            Bukkit.getPluginManager().disablePlugin(this);
-            return false;
-        }
-        return true;
-    }
-
-    private void onVerFailure(String pluginName, String minVer) {
-        getLogger().severe(pluginName + " version is too old! (" + minVer + " or higher required)");
-    }
-
 
     public @Nullable RedisService getRedisService() {
         return syncMode.getRedisService();

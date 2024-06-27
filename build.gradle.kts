@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.kamikazejam"
-version = "0.1.0"
+version = "0.1.1"
 description = "A data storage and synchronization library for Spigot plugins."
 
 repositories {
@@ -22,12 +22,13 @@ val kamiCommonVer = "3.0.3.9"
 dependencies {
     // Spigot (from public nexus)
     compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
-    // KamiCommon (spigot dependency) - for MultiVersion support
-    compileOnly("com.kamikazejam.kamicommon:spigot-jar:$kamiCommonVer")
 
     // Internal Libraries
     shadow("dev.morphia.morphia:morphia-core:2.4.14")
     shadow("io.lettuce:lettuce-core:6.3.2.RELEASE")
+    shadow("com.google.code.gson:gson:2.11.0")
+    // KamiCommon (spigot utils) - for MultiVersion support
+    shadow("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
 
     // Annotation Processors
     //   Lombok
@@ -62,6 +63,26 @@ tasks {
         relocate("dev.morphia", "shaded.com.kamikazejam.syncengine.morphia")
         relocate("io.lettuce.core", "shaded.com.kamikazejam.syncengine.lettuce.core")
         relocate("com.mongodb", "shaded.com.kamikazejam.syncengine.mongodb")
+        relocate("com.google.gson", "shaded.com.kamikazejam.syncengine.google.gson")
+        relocate("com.kamikazejam.kamicommon", "shaded.com.kamikazejam.syncengine.kc")
+        // Other relocations that didn't get picked-up in the script below
+        relocate("org.bson", "shaded.com.kamikazejam.syncengine.bson")
+        relocate("nonapi.io.github.classgraph", "shaded.com.kamikazejam.syncengine.classgraph")
+        relocate("reactor", "shaded.com.kamikazejam.syncengine.reactor")
+        relocate("javax.annotation", "shaded.com.kamikazejam.syncengine.javax.annotation")
+        relocate("org.jetbrains.annotations", "shaded.com.kamikazejam.syncengine.jetbrains.annotations")
+        relocate("org.objectweb.asm", "shaded.com.kamikazejam.syncengine.objectweb.asm")
+        relocate("edu.umd", "shaded.com.kamikazejam.syncengine.edu.umd")
+
+        // Dynamically relocate all dependencies
+        doFirst {
+            project.configurations.getByName("shadow").resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
+                val moduleId = artifact.moduleVersion.id
+                val originalPackage = moduleId.group.replace('.', '/')
+                val targetPackage = "shaded/com/kamikazejam/syncengine/libs/$originalPackage"
+                relocate(originalPackage, targetPackage)
+            }
+        }
     }
 
     processResources {
@@ -94,6 +115,20 @@ publishing {
             artifactId = project.name
             version = rootProject.version.toString()
             from(components["java"])
+
+            // Customize the generated POM
+            pom.withXml {
+                val dependenciesNode = asNode().appendNode("dependencies")
+                project.configurations.getByName("shadow").dependencies.forEach {
+                    val dependencyNode = dependenciesNode.appendNode("dependency")
+                    dependencyNode.appendNode("groupId", it.group)
+                    dependencyNode.appendNode("artifactId", it.name)
+                    dependencyNode.appendNode("version", it.version)
+                }
+
+                // Remove the shaded dependencies from the POM
+                asNode().remove(dependenciesNode)
+            }
         }
     }
 
