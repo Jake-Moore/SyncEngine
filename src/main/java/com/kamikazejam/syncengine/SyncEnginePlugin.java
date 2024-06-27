@@ -1,8 +1,11 @@
 package com.kamikazejam.syncengine;
 
 import com.kamikazejam.kamicommon.KamiPlugin;
+import com.kamikazejam.kamicommon.SpigotUtilProvider;
 import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
 import com.kamikazejam.kamicommon.util.Txt;
+import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
+import com.kamikazejam.kamicommon.yaml.standalone.YamlUtil;
 import com.kamikazejam.syncengine.base.mode.StorageMode;
 import com.kamikazejam.syncengine.base.mode.SyncMode;
 import com.kamikazejam.syncengine.command.SyncEngineCommand;
@@ -46,6 +49,11 @@ public class SyncEnginePlugin extends KamiPlugin {
             getPluginLoader().disablePlugin(this);
             return;
         }
+
+        // Load KamiCommon and some other time-consuming tasks
+        SpigotUtilProvider.setPlugin(this);
+        YamlUtil.getYaml();
+        IdUtilLocal.setup(this);
 
         // Load Plugin Modes
         syncMode = SyncMode.valueOf(getKamiConfig().getString("mode"));
