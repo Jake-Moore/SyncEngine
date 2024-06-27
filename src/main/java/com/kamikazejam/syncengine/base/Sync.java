@@ -53,15 +53,6 @@ public interface Sync<K> {
     void setId(@NotNull K id);
 
     /**
-     * Gets the field name that {@link #getId()} uses (the field in the superclass)
-     * This is used for MongoDB lookups, it must be correct for proper functionality.
-     *
-     * @return field name
-     */
-    @NotNull
-    String identifierFieldName();
-
-    /**
      * Gets the cache associated with this Sync object.
      * Every Sync has its cache stored (non-persistent / transient) for easy access.
      *

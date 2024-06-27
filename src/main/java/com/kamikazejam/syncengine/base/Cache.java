@@ -294,11 +294,5 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     @NotNull
     Class<X> getSyncClass();
 
-    /**
-     * Gets an empty class of the Sync, so MongoService can read its identifierFieldName() method
-     */
-    @ApiStatus.Internal
-    @NotNull
-    X getEmptySync();
 }
 
