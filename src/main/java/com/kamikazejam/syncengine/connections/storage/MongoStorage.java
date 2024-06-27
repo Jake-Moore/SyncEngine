@@ -110,7 +110,7 @@ public class MongoStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) {
-        // Try saving with Morphia/MongoDB and catch/fix a host of possible errors we can receive
+        // Try saving to MongoDB with Jackson and catch/fix a host of possible errors we can receive
         try {
             // TODO add optimistic versioning
             getJackson(cache).save(sync);
@@ -301,7 +301,7 @@ public class MongoStorage extends StorageService {
 //        //   Swapping version switching, and saving on quit while swapping causes this exception
 //        // if (sync instanceof IdProfile) { return true; }
 //
-//        String err = "Morphia Versioning error saving Object to Mongo Layer: " + sync.getIdentifier() + " (Version Mismatch)"
+//        String err = "Versioning error saving Object to Mongo Layer: " + sync.getIdentifier() + " (Version Mismatch)"
 //                        + "\n" + localErr
 //                        + "\n" + remoteErr.get();
 //
