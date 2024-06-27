@@ -51,8 +51,14 @@ java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
+// Register a task to delete the jars in the libs folder
+tasks.register<Delete>("cleanLibs") {
+    delete("build/libs")
+}
+
 tasks {
     build.get().dependsOn(shadowJar)
+    shadowJar.get().dependsOn("cleanLibs")
 
     shadowJar {
         minimize()
