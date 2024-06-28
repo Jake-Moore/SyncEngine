@@ -174,7 +174,7 @@ public abstract class SyncObject implements Sync<String> {
     }
 
     @Override
-    public void saveCacheCopy() {
+    public void cacheCopy() {
         // Create a new Sync to hold the deep copy
         Sync<String> deepCopySync = cache.getInstantiator().instantiate();
         deepCopySync.setCache(cache);

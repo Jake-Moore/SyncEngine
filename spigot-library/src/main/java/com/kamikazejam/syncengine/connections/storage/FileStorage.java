@@ -1,5 +1,7 @@
 package com.kamikazejam.syncengine.connections.storage;
 
+import com.kamikazejam.kamicommon.gson.JsonObject;
+import com.kamikazejam.kamicommon.gson.JsonParser;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
@@ -36,7 +38,7 @@ public class FileStorage extends StorageService {
         // Write the Object json to the file
         try {
             @Nullable String json = readJsonFromFile(targetFile);
-            @Nullable Long dbVer = getVersionFromJson(cache, json);
+            @Nullable Long dbVer = getVersionFromJson(json);
 
             // Optimistic Versioning (only fails with a valid, non-equal database version)
             if (dbVer != null && dbVer != sync.getVersion()) {
@@ -62,13 +64,12 @@ public class FileStorage extends StorageService {
         return (json == null || json.isEmpty()) ? null : json;
     }
 
-    @SuppressWarnings("ConstantValue")
-    private <K, X extends Sync<K>> @Nullable Long getVersionFromJson(Cache<K, X> cache, @Nullable String json) {
+    private @Nullable Long getVersionFromJson(@Nullable String json) {
         if (json == null) { return null; }
         try {
-            @Nullable X dbVer = JacksonUtil.fromJson(cache.getSyncClass(), json);
-            if (dbVer == null) { return null; }
-            return dbVer.getVersion();
+            JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
+            if (!jsonObject.has("version")) { return null; }
+            return jsonObject.get("version").getAsLong();
         }catch (Throwable t) {
             return null;
         }

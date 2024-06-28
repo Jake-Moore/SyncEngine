@@ -144,5 +144,5 @@ public interface Sync<K> {
     /**
      * Creates a new Sync (a copy) and saves it as this Sync's cached copy.
      */
-    void saveCacheCopy();
+    void cacheCopy();
 }

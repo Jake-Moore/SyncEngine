@@ -125,6 +125,7 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
 
             final K identifier = cache.keyFromString(identifierString);
             if (cache.isCached(identifier) || force) {
+                // Using getFromDatabase triggers Sync.cacheCopy, as intended
                 cache.runAsync(() -> cache.getFromDatabase(identifier, true).ifPresent(sync -> {
                     cache.getLoggerService().debug("Received update request in SyncUpdater for " + cache.getName() + ":" + cache.keyToString(sync.getId()) + " version: " + sync.getVersion());
 
