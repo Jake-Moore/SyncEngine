@@ -3,22 +3,22 @@ package com.kamikazejam.syncengine.connections.storage;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
+import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import com.kamikazejam.syncengine.connections.storage.iterable.SyncIterable;
-import lombok.SneakyThrows;
+import com.kamikazejam.syncengine.util.JacksonUtil;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.kamikazejam.syncengine.util.JacksonUtil.getMapper;
 
 @SuppressWarnings("unnused")
 public class FileStorage extends StorageService {
@@ -30,17 +30,47 @@ public class FileStorage extends StorageService {
     //                 StorageService                    //
     // ------------------------------------------------- //
     @Override
-    public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) {
+    public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) throws VersionMismatchException {
         File targetFile = getTargetFile(cache, sync.getId());
 
         // Write the Object json to the file
         try {
-            String json = toJson(sync);
-            FileUtils.write(targetFile, json, StandardCharsets.UTF_8);
+            @Nullable String json = readJsonFromFile(targetFile);
+            @Nullable Long dbVer = getVersionFromJson(cache, json);
+
+            // Optimistic Versioning (only fails with a valid, non-equal database version)
+            if (dbVer != null && dbVer != sync.getVersion()) {
+                throw new VersionMismatchException(cache, sync.getVersion(), dbVer, json);
+            }
+
+            // Increment the Version and write the file
+            sync.setVersion(sync.getVersion() + 1);
+            FileUtils.write(targetFile, JacksonUtil.toJson(sync), StandardCharsets.UTF_8);
             return true;
+        } catch (VersionMismatchException v) {
+            // pass through
+            throw v;
         } catch (Throwable t) {
             cache.getLoggerService().severe(t, "Failed to write file: " + targetFile.getAbsolutePath());
             return false;
+        }
+    }
+
+    private @Nullable String readJsonFromFile(@NotNull File targetFile) throws IOException {
+        if (!targetFile.exists()) { return null; }
+        @Nullable String json = FileUtils.readFileToString(targetFile, StandardCharsets.UTF_8);
+        return (json == null || json.isEmpty()) ? null : json;
+    }
+
+    @SuppressWarnings("ConstantValue")
+    private <K, X extends Sync<K>> @Nullable Long getVersionFromJson(Cache<K, X> cache, @Nullable String json) {
+        if (json == null) { return null; }
+        try {
+            @Nullable X dbVer = JacksonUtil.fromJson(cache.getSyncClass(), json);
+            if (dbVer == null) { return null; }
+            return dbVer.getVersion();
+        }catch (Throwable t) {
+            return null;
         }
     }
 
@@ -52,7 +82,7 @@ public class FileStorage extends StorageService {
         }
         try {
             String json = FileUtils.readFileToString(targetFile, StandardCharsets.UTF_8);
-            return Optional.ofNullable(fromJson(cache.getSyncClass(), json));
+            return Optional.ofNullable(JacksonUtil.fromJson(cache.getSyncClass(), json));
         } catch (Throwable t) {
             cache.getLoggerService().severe(t, "Failed to read file: " + targetFile.getAbsolutePath());
             return Optional.empty();
@@ -145,17 +175,6 @@ public class FileStorage extends StorageService {
     @Override
     public String getLoggerName() {
         return "FileStorage";
-    }
-
-    @SneakyThrows
-    public static <K, X extends Sync<K>> @NotNull String toJson(X sync) {
-        return getMapper().writeValueAsString(sync);
-    }
-
-    @SneakyThrows
-    public static <K, X extends Sync<K>> @Nullable X fromJson(Class<X> clazz, @Nullable String json) {
-        if (json == null) { return null; }
-        return getMapper().readValue(json, clazz);
     }
 
     // ------------------------------------------------- //

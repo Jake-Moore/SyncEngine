@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.mode.object;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import lombok.Getter;
@@ -23,9 +24,8 @@ public abstract class SyncObject implements Sync<String> {
     @JsonProperty("_id")
     private @NotNull String syncId = UUID.randomUUID().toString();
 
-    // TODO Implement Optimistic Locking
     @JsonProperty("version")
-    protected long version = 0;
+    protected long version = 0L;
 
 
     // ----------------------------------------------------- //
@@ -34,6 +34,7 @@ public abstract class SyncObject implements Sync<String> {
     protected transient SyncObjectCache cache;
     protected transient long handshakeStartTimestamp = 0;
     protected transient @Nullable Long readOnlyTimeStamp = null;
+    protected transient @Nullable Sync<String> cachedCopy;
 
 
     // ----------------------------------------------------- //
@@ -142,5 +143,47 @@ public abstract class SyncObject implements Sync<String> {
     @Override
     public boolean isReadOnly() {
         return readOnlyTimeStamp != null && (System.currentTimeMillis() - readOnlyTimeStamp) <= 1000;
+    }
+
+    @Override
+    public void setCachedCopy(@Nullable Sync<String> cachedCopy) {
+        this.cachedCopy = cachedCopy;
+    }
+
+    @Override
+    public @NotNull Sync<String> getCachedCopy() {
+        Preconditions.checkNotNull(cachedCopy, "Cached copy is null!");
+        return cachedCopy;
+    }
+
+    @Override
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    @Override
+    public long getVersion() {
+        return version;
+    }
+
+    @Override
+    public void loadLocalDeepCopy(Sync<String> o) {
+        SyncObject that = (SyncObject) o;
+        that.version = this.version;
+        that.syncId = this.syncId;
+    }
+
+    @Override
+    public void saveCacheCopy() {
+        // Create a new Sync to hold the deep copy
+        Sync<String> deepCopySync = cache.getInstantiator().instantiate();
+        deepCopySync.setCache(cache);
+
+        // Load parent (SyncObject or SyncProfile) data into the deep copy
+        this.loadLocalDeepCopy(deepCopySync);
+        // Load User data
+        this.copyInto(deepCopySync);
+        // Cache this Copy for VersionMismatchException correction
+        this.setCachedCopy(deepCopySync);
     }
 }

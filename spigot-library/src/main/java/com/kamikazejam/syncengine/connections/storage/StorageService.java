@@ -4,6 +4,7 @@ import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.base.error.LoggerService;
+import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
@@ -17,10 +18,12 @@ public abstract class StorageService extends LoggerService implements Service {
 
     /**
      * Save a Sync to this store. Requires the cache it belongs to.
+     * Implementations of this class should handle optimistic versioning and throw errors accordingly.
      *
+     * @throws VersionMismatchException if
      * @return if the Sync was saved successfully.
      */
-    public abstract <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync);
+    public abstract <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) throws VersionMismatchException;
 
     /**
      * Retrieve a Sync from this store. Requires the cache to fetch it from.

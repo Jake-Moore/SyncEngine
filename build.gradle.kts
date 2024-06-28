@@ -1,7 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 @Suppress("PropertyName")
-val VERSION = "0.3.1"
+val VERSION = "0.3.2.3"
 
 plugins {
     id("java")
@@ -14,7 +14,7 @@ plugins {
 tasks.jar.get().enabled = false
 
 // Export KamiCommonVer for use in all subprojects
-val kamiCommonVer = "3.0.4.0"
+val kamiCommonVer = "3.0.4.1"
 ext {
     set("kamiCommonVer", kamiCommonVer)
 }
@@ -62,6 +62,7 @@ subprojects {
         testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
         //   JetBrains
         compileOnly("org.jetbrains:annotations:24.1.0")
+        testCompileOnly("org.jetbrains:annotations:24.1.0")
     }
 
     // Register a task to delete the jars in the libs folder

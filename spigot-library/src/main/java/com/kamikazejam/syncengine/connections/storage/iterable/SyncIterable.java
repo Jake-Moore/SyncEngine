@@ -2,7 +2,7 @@ package com.kamikazejam.syncengine.connections.storage.iterable;
 
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
-import com.kamikazejam.syncengine.connections.storage.FileStorage;
+import com.kamikazejam.syncengine.util.JacksonUtil;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,7 +36,7 @@ public class SyncIterable<K, X extends Sync<K>> implements Iterable<X> {
                     Path filePath = pathIterator.next();
                     try {
                         String json = FileUtils.readFileToString(filePath.toFile(), StandardCharsets.UTF_8);
-                        return FileStorage.fromJson(cache.getSyncClass(), json);
+                        return JacksonUtil.fromJson(cache.getSyncClass(), json);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to read file: " + filePath, e);
                     }

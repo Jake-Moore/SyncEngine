@@ -23,4 +23,10 @@ public class SyncEnginePlugin extends KamiPlugin {
     public void onDisableInner() {
         EngineSource.onDisable();
     }
+
+    // Disables auto-loading of default config.yml (SyncEngine uses syncengine.yml)
+    @Override
+    public boolean loadKamiConfig() {
+        return false;
+    }
 }

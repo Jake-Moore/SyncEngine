@@ -207,8 +207,8 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         if (update.getVersion() < sync.getVersion()) {
             throw new IllegalStateException("[" + getName() + "] Update Sync is OLDER? Loading: " + keyToString(sync.getId()) + " from v" + sync.getVersion() + " to v" + update.getVersion());
         }
-        sync.setVersion(update.getVersion());
         sync.load(update);
+        sync.setVersion(update.getVersion());
     }
 
     @Override
@@ -367,4 +367,9 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 //    public Optional<NetworkProfile> getNetworked(@NotNull UUID key) {
 //        return getNetworkService().get(key);
 //    }
+
+    @Override
+    public @NotNull SyncInstantiator<K, X> getInstantiator() {
+        return instantiator;
+    }
 }

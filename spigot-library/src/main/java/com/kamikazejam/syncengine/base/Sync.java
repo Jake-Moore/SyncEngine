@@ -12,6 +12,25 @@ import java.util.concurrent.CompletableFuture;
 @SuppressWarnings({"UnusedReturnValue", "unused"})
 public interface Sync<K> {
 
+    // ----------------------------------------------------- //
+    //                  User Defined Methods                 //
+    // ----------------------------------------------------- //
+    /**
+     * Load another Sync object's data into this Sync object. (Overwrite/Update)
+     */
+    void load(Sync<K> other);
+
+    /**
+     * Perform a deep copy of this Sync object into the provided Sync object.
+     * All fields should be copied over (deep copy).
+     */
+    void copyInto(@NotNull Sync<K> other);
+
+
+    // ----------------------------------------------------- //
+    //                Api / Internal Methods                 //
+    // ----------------------------------------------------- //
+
     /**
      * Used to call afterInitialized (only once)
      */
@@ -98,11 +117,6 @@ public interface Sync<K> {
     boolean hasValidHandshake();
 
     /**
-     * Load another Sync object's data into this Sync object. (Overwrite/Update)
-     */
-    void load(Sync<K> other);
-
-    /**
      * Sets the optimistic versioning field, used during the update process
      */
     @ApiStatus.Internal
@@ -117,4 +131,18 @@ public interface Sync<K> {
      * @return If this Sync is read-only right now
      */
     boolean isReadOnly();
+
+    @ApiStatus.Internal
+    void setCachedCopy(Sync<K> copy);
+
+    @ApiStatus.Internal
+    @NotNull Sync<K> getCachedCopy();
+
+    @ApiStatus.Internal
+    void loadLocalDeepCopy(Sync<K> other);
+
+    /**
+     * Creates a new Sync (a copy) and saves it as this Sync's cached copy.
+     */
+    void saveCacheCopy();
 }

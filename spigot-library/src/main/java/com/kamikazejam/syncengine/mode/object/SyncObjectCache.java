@@ -13,7 +13,6 @@ import com.kamikazejam.syncengine.mode.object.store.ObjectStoreDatabase;
 import com.kamikazejam.syncengine.mode.object.store.ObjectStoreLocal;
 import lombok.Getter;
 import org.bukkit.Bukkit;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -96,12 +95,6 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     @Override
     public @NotNull String keyFromString(@NotNull String key) {
         return key;
-    }
-
-    // Used Internally by ObjectStoreMongo to obtain a new instance, but not one we'd ever use for anything
-    @ApiStatus.Internal
-    public X emptyCreate() {
-        return instantiator.instantiate();
     }
 
     @Override

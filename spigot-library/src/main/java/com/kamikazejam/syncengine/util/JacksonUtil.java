@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
+import com.kamikazejam.syncengine.base.Sync;
+import lombok.SneakyThrows;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,5 +33,21 @@ public class JacksonUtil {
         // Enable serialization of null and empty values
         mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
         return mapper;
+    }
+
+    @SneakyThrows
+    public static <K, X extends Sync<K>> @NotNull String toJson(X sync) {
+        return getMapper().writeValueAsString(sync);
+    }
+
+    @SneakyThrows @Contract("_, !null -> !null")
+    public static <K, X extends Sync<K>> @Nullable X fromJson(Class<X> clazz, @Nullable String json) {
+        if (json == null) { return null; }
+        return getMapper().readValue(json, clazz);
+    }
+
+    @SneakyThrows
+    public static @NotNull String toJson(@NotNull Object o) {
+        return getMapper().writeValueAsString(o);
     }
 }

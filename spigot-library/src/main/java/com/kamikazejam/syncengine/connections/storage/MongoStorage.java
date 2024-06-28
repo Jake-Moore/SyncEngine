@@ -6,6 +6,7 @@ import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.connections.config.MongoConf;
 import com.kamikazejam.syncengine.connections.monitor.MongoMonitor;
+import com.kamikazejam.syncengine.util.JacksonUtil;
 import com.mongodb.*;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -110,8 +111,10 @@ public class MongoStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) {
+
         // Try saving to MongoDB with Jackson and catch/fix a host of possible errors we can receive
         try {
+
             // TODO add optimistic versioning
             getJackson(cache).save(sync);
             return true;
@@ -259,23 +262,27 @@ public class MongoStorage extends StorageService {
     //                Helper Methods                     //
     // ------------------------------------------------- //
 
+    @SuppressWarnings("SameReturnValue")
     private <K, X extends Sync<K>> boolean handleMongoWriteException(MongoWriteException ex, Cache<K, X> cache, X sync) {
         // There's a chance on start we may create and try to save an object that is being created by another instance
         //  at this very moment, in that case we should fetch the remote, and update our local copy with the remote
         if (ex.getError().getCategory() == ErrorCategory.DUPLICATE_KEY) {
-            cache.getLoggerService().debug("Duplicate key error saving Object to MongoDB Layer: " + sync.getId());
+            // There's no 'good' resolution strategy, we should probably just log the error
+            //  and hope the developer solves the issue on their end.
+            // Two options exist for auto-correcting this error:
+            //  1. Update local copy with remote data (we lose whatever was in local)
+            //  2. Update remote with local (we lose whatever was in remote)
+
+            cache.getLoggerService().debug("Duplicate key error saving Object to MongoDB Layer: " + cache.getSyncClass().getName() + " - " + sync.getId());
+            cache.getLoggerService().debug("  Local Object Json: " + JacksonUtil.toJson(sync));
 
             Optional<X> remote = cache.get(sync.getId());
-            if (remote.isPresent()) {
-                // If present, update local copy with remote data
-                cache.getLoggerService().debug("  Updating local Object with remote Object: " + sync.getId());
-                cache.updateSyncFromNewer(sync, remote.get());
-            } else {
-                // Otherwise remove from the cache since for some reason we couldn't fet remote
-                cache.getLoggerService().debug("  ERROR - key not found in remote, uncaching local Object: " + sync.getId());
-                cache.uncache(sync);
-            }
-            return true;
+            remote.ifPresent(x -> {
+                String json = JacksonUtil.toJson(x);
+                cache.getLoggerService().debug("  Remote Object Json: " + json);
+            });
+            // Technically did not resolve the issue
+            return false;
         }
 
         // If not a duplicate key error, log it

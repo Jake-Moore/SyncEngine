@@ -6,6 +6,7 @@ import com.kamikazejam.syncengine.base.cache.SyncLoader;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
+import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Blocking;
@@ -294,5 +295,9 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     @NotNull
     Class<X> getSyncClass();
 
+    /**
+     * Returns the SyncInstantiator for the Sync object in this cache.
+     */
+    @NotNull SyncInstantiator<K, X> getInstantiator();
 }
 
