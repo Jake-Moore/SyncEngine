@@ -114,7 +114,7 @@ public class MongoStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) {
+    public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) throws VersionMismatchException {
 
         // Try saving to MongoDB with Jackson and catch/fix a host of possible errors we can receive
         try {
@@ -134,6 +134,9 @@ public class MongoStorage extends StorageService {
             sync.setVersion(sync.getVersion() + 1);
             getJackson(cache).save(sync);
             return true;
+        } catch (VersionMismatchException v) {
+            // pass through
+            throw v;
         } catch (MongoWriteException ex1) {
             // Handle the MongoWriteException
             return handleMongoWriteException(ex1, cache, sync);

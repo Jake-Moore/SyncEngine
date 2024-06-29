@@ -17,16 +17,20 @@ import java.util.logging.Logger;
 @SuppressWarnings("unused")
 public class VersionMismatchHandler {
 
-    public static <X extends Sync<String>> boolean handObjectException(Save<String, X> saver, Get<String, X> getter, Cache<String, X> cache, @NotNull X sync, VersionMismatchException ex) {
+    /**
+     * @return A NEW Sync object (as a replacement for the old one) - should be cached and saved
+     */
+    public static <X extends Sync<String>> X handObjectException(Get<String, X> getter, Cache<String, X> cache, @NotNull X sync, VersionMismatchException ex) {
         // Fetch the new Sync and then try to save it again
-        @NotNull X updatedSync = resolve(getter, cache, sync, ex);
-        return saver.save(cache, updatedSync);
+        return resolve(getter, cache, sync, ex);
     }
 
-    public static <X extends Sync<UUID>> boolean handProfileException(Save<UUID, X> saver, Get<UUID, X> getter, Cache<UUID, X> cache, @NotNull X sync, VersionMismatchException ex) {
+    /**
+     * @return A NEW Sync object (as a replacement for the old one) - should be cached and saved
+     */
+    public static <X extends Sync<UUID>> X handProfileException(Get<UUID, X> getter, Cache<UUID, X> cache, @NotNull X sync, VersionMismatchException ex) {
         // Fetch the new Sync and then try to save it again
-        @NotNull X updatedSync = resolve(getter, cache, sync, ex);
-        return saver.save(cache, updatedSync);
+        return resolve(getter, cache, sync, ex);
     }
 
     /**
@@ -82,10 +86,7 @@ public class VersionMismatchHandler {
         Arrays.stream(s).forEach(m -> logger.info(StringUtil.t("&c" + m)));
     }
 
-    // Generic Interfaces so we can call the SyncStore methods for getting and saving
-    public interface Save<K, X extends Sync<K>> {
-        boolean save(Cache<K, X> cache, @NotNull X sync);
-    }
+    // Generic Interface so we can call the SyncStore methods for getting and saving
     public interface Get<K, X extends Sync<K>> {
         @NotNull Optional<X> get(Cache<K, X> cache, @NotNull K key);
     }

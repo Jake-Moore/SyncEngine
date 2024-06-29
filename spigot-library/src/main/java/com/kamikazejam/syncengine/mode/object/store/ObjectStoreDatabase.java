@@ -75,7 +75,15 @@ public class ObjectStoreDatabase<X extends SyncObject> extends SyncStore<String,
             return b;
         }catch (VersionMismatchException ex) {
             // Handle VersionMismatchException
-            return VersionMismatchHandler.handObjectException(this::save, this::get, cache, sync, ex);
+            @NotNull X updatedSync = VersionMismatchHandler.handObjectException(this::get, cache, sync, ex);
+            // Save our new Sync version
+            boolean b = this.save(cache, updatedSync);
+            if (b) {
+                // If saved properly, update our local object
+                cache.updateSyncFromNewer(sync, updatedSync);
+                sync.cacheCopy(); // need to call this again since data changed
+            }
+            return b;
         }
     }
 
