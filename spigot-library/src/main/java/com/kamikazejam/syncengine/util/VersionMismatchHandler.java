@@ -20,7 +20,7 @@ public class VersionMismatchHandler {
     /**
      * @return A NEW Sync object (as a replacement for the old one) - should be cached and saved
      */
-    public static <X extends Sync<String>> X handObjectException(Get<String, X> getter, Cache<String, X> cache, @NotNull X sync, VersionMismatchException ex) {
+    public static <X extends Sync<String>> X handleObjectException(Get<String, X> getter, Cache<String, X> cache, @NotNull X sync, VersionMismatchException ex) {
         // Fetch the new Sync and then try to save it again
         return resolve(getter, cache, sync, ex);
     }
@@ -28,7 +28,7 @@ public class VersionMismatchHandler {
     /**
      * @return A NEW Sync object (as a replacement for the old one) - should be cached and saved
      */
-    public static <X extends Sync<UUID>> X handProfileException(Get<UUID, X> getter, Cache<UUID, X> cache, @NotNull X sync, VersionMismatchException ex) {
+    public static <X extends Sync<UUID>> X handleProfileException(Get<UUID, X> getter, Cache<UUID, X> cache, @NotNull X sync, VersionMismatchException ex) {
         // Fetch the new Sync and then try to save it again
         return resolve(getter, cache, sync, ex);
     }

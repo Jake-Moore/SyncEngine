@@ -32,7 +32,6 @@ public abstract class SyncObject implements Sync<String> {
     //                      Transients                       //
     // ----------------------------------------------------- //
     protected transient SyncObjectCache cache;
-    protected transient long handshakeStartTimestamp = 0;
     protected transient @Nullable Long readOnlyTimeStamp = null;
     protected transient @Nullable Sync<String> cachedCopy;
 
@@ -59,11 +58,7 @@ public abstract class SyncObject implements Sync<String> {
     // ----------------------------------------------------- //
     @Override
     public boolean hasValidHandshake() {
-        if (handshakeStartTimestamp > 0) {
-            long ago = System.currentTimeMillis() - handshakeStartTimestamp;
-            long seconds = ago / 1000;
-            return seconds < 10;
-        }
+        // Has no meaning for SyncObject
         return false;
     }
 
@@ -90,10 +85,7 @@ public abstract class SyncObject implements Sync<String> {
 
     @Override
     public int hashCode() {
-        int result = 1;
-        Object $id = this.getId();
-        result = result * 59 + ($id == null ? 43 : $id.hashCode());
-        return result;
+        return Objects.hashCode(this.getId());
     }
 
     @Override

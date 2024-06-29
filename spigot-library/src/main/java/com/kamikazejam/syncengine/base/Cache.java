@@ -1,26 +1,32 @@
 package com.kamikazejam.syncengine.base;
 
 import com.kamikazejam.syncengine.SyncRegistration;
-import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
 import com.kamikazejam.syncengine.base.cache.SyncLoader;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
+import com.kamikazejam.syncengine.mode.object.ObjectCache;
+import com.kamikazejam.syncengine.mode.profile.ProfileCache;
+import com.kamikazejam.syncengine.mode.profile.SyncProfile;
+import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * A Cache holds Sync objects and manages their retrieval, caching, and saving.
+ * Getters vary by Sync type, they are defined in the sync-specific interfaces:
+ * {@link ObjectCache} and {@link ProfileCache}
  */
 @SuppressWarnings({"UnusedReturnValue", "unused"})
 public interface Cache<K, X extends Sync<K>> extends Service {
@@ -101,14 +107,6 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     boolean isCached(@NotNull K key);
 
     /**
-     * Retrieves ALL Syncs from the database. Optionally caches them.
-     * @return An Iterable of all Syncs, for sequential processing.
-     */
-    @Blocking
-    @NotNull
-    Iterable<X> getAll(boolean cacheSyncs);
-
-    /**
      * Retrieves ALL Sync IDs from the database.
      * @return An Iterable of all Syncs, for sequential processing.
      */
@@ -132,15 +130,6 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * Sets the {@link LoggerService} for this cache.
      */
     void setLoggerService(@NotNull LoggerService loggerService);
-
-    /**
-     * Saves all Sync objects in this cache to the database.
-     * Blocks until completion
-     *
-     * @return a {@link CacheSaveResult} with information about how many objects were saved.
-     */
-    @NotNull @Blocking
-    CacheSaveResult saveAll();
 
     /**
      * Gets the {@link StoreMethods} that handles local storage for this cache.
@@ -228,37 +217,10 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     long getLocalCacheSize();
 
     /**
-     * Creates a new Sync object with a random key.
-     */
-    @NotNull
-    X create();
-
-    /**
      * Creates a new Sync object with the provided key.
      */
     @NotNull
     X create(@NotNull K key);
-
-
-    /**
-     * Get a Sync object from this cache (will load from DB if necessary)
-     * See {@link #getFromCache(Object)} if you want to avoid loading from the database.
-     */
-    @NotNull
-    Optional<X> get(@Nullable K key);
-
-    /**
-     * Get a Sync object from this cache (will load from DB if necessary)
-     * See {@link #getFromCache(Object)} if you want to avoid loading from the database.
-     */
-    @NotNull
-    Optional<X> get(@Nullable K key, boolean saveToLocalCache);
-
-    /**
-     * Get a Sync object from this cache (loaded from DB if necessary) or create one with this key if not found.
-     */
-    @NotNull
-    X getOrCreate(@NotNull K key);
 
     /**
      * @return True iff the cache contains a Sync with the provided key.
@@ -269,7 +231,7 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * Gets the {@link SyncLoader} for the provided key.
      */
     @NotNull
-    SyncLoader<X> controller(@NotNull K key);
+    SyncLoader<X> loader(@NotNull K key);
 
     /**
      * Push (through the Redis network) an update of this Sync.
@@ -282,12 +244,14 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     @ApiStatus.Internal
     boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async);
 
-    // TODO
-//    RedisNetworkService getNetworkService();
-//
-//    Optional<NetworkProfile> getNetworked(@NotNull UUID key);
-//
-//    <T extends SyncProfile> Optional<NetworkProfile> getNetworked(@NotNull T sync);
+    @NotNull
+    NetworkProfileStore getNetworkStore();
+
+    @NotNull
+    Optional<NetworkProfile> getNetworked(@NotNull UUID key);
+
+    @NotNull
+    <T extends SyncProfile> Optional<NetworkProfile> getNetworked(@NotNull T sync);
 
     /**
      * Internal method used by SyncEngine to forcefully update a local instance of a Sync object with a newer one,

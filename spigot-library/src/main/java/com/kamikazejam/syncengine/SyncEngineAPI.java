@@ -8,8 +8,10 @@ import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class SyncEngineAPI {
@@ -43,6 +45,24 @@ public class SyncEngineAPI {
      */
     public static String convertCacheName(String name) {
         return name.toLowerCase().replace(" ", "");
+    }
+
+
+    private static List<Cache<?,?>> _sortedCachesReversed = null;
+    /**
+     * Retrieve the caches in sorted order by dependencies (load order)
+     */
+    public static @NotNull List<Cache<?,?>> getSortedCachesByDependsReversed() {
+        if (_sortedCachesReversed != null && !hasBeenModified()) {
+            return _sortedCachesReversed;
+        }
+        _sortedCachesReversed = caches.values().stream().sorted().collect(Collectors.toList());
+        return _sortedCachesReversed;
+    }
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    private static boolean hasBeenModified() {
+        return caches.size() != _sortedCachesReversed.size();
     }
 
     /**

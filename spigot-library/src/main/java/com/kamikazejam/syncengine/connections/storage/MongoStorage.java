@@ -7,6 +7,7 @@ import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import com.kamikazejam.syncengine.connections.config.MongoConf;
 import com.kamikazejam.syncengine.connections.monitor.MongoMonitor;
+import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import com.mongodb.*;
@@ -199,6 +200,17 @@ public class MongoStorage extends StorageService {
         return () -> new TransformingIterator<>(iterator, Sync::getId);
     }
 
+    @Override
+    public <K, X extends Sync<K>> boolean canCache(Cache<K, X> cache) {
+        @Nullable RedisService redisService = EngineSource.getRedisService();
+        // If we have Redis on this instance, check both MongoDB and Redis
+        if (redisService != null) {
+            return mongoConnected && redisService.isRedisConnected();
+        }
+        // Otherwise just check that MongoDB is connected
+        return mongoConnected;
+    }
+
     // ------------------------------------------------- //
     //                MongoDB Connection                 //
     // ------------------------------------------------- //
@@ -306,7 +318,7 @@ public class MongoStorage extends StorageService {
             cache.getLoggerService().debug("Duplicate key error saving Object to MongoDB Layer: " + cache.getSyncClass().getName() + " - " + sync.getId());
             cache.getLoggerService().debug("  Local Object Json: " + JacksonUtil.toJson(sync));
 
-            Optional<X> remote = cache.get(sync.getId());
+            Optional<X> remote = cache.getFromDatabase(sync.getId(), false);
             remote.ifPresent(x -> {
                 String json = JacksonUtil.toJson(x);
                 cache.getLoggerService().debug("  Remote Object Json: " + json);

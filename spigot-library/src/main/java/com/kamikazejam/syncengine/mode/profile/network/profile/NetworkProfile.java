@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.mode.profile.network;
+package com.kamikazejam.syncengine.mode.profile.network.profile;
 
 import com.kamikazejam.kamicommon.json.JSONObject;
 import com.kamikazejam.kamicommon.util.Preconditions;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * {@link NetworkProfile#markLoaded} called in SyncListener.onProfileCachingStart <br>
- * {@link NetworkProfile#markUnloaded} called in SyncProfileController.uncache
+ * {@link NetworkProfile#markUnloaded} called in SyncProfileLoader.uncache
  */
 @Data
 @Accessors(chain = true)
@@ -36,9 +36,8 @@ public class NetworkProfile {
     @Setter
     private boolean firstJoinToSyncGroup = false;
 
-    // For Deserialization, must have a no-arg constructor
-    public NetworkProfile() {
-    }
+    // For Jackson, must have a no-arg constructor
+    public NetworkProfile() {}
 
     public NetworkProfile(@NotNull UUID uuid, @NotNull String username) {
         Preconditions.checkNotNull(uuid, "UUID cannot be null");
@@ -88,19 +87,6 @@ public class NetworkProfile {
     public void setUsername(@NotNull String username) {
         Preconditions.checkNotNull(username);
         this.username = username;
-    }
-
-    public static String serialize(@NotNull NetworkProfile profile) {
-        JSONObject json = new JSONObject();
-        json.put("lastCached", profile.getLastCached());
-        json.put("lastSaved", profile.getLastSaved());
-        json.put("uuid", profile.getUUID().toString());
-        json.put("username", profile.getUsername());
-        json.put("lastSeenServer", profile.getLastSeenServer());
-        json.put("lastSeen", profile.getLastSeen());
-        json.put("online", profile.isOnline());
-        json.put("firstJoinToSyncGroup", profile.isFirstJoinToSyncGroup());
-        return json.toString();
     }
 
     public static NetworkProfile deserialize(@NotNull String json) {

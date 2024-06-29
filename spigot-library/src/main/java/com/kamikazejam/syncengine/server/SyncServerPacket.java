@@ -4,8 +4,7 @@ import com.google.common.base.Preconditions;
 import lombok.Data;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 @Data
 public class SyncServerPacket {

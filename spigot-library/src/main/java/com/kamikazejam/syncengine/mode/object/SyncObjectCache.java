@@ -12,11 +12,12 @@ import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.mode.object.store.ObjectStoreDatabase;
 import com.kamikazejam.syncengine.mode.object.store.ObjectStoreLocal;
+import com.kamikazejam.syncengine.mode.object.update.ObjectUpdater;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
@@ -27,10 +28,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 @SuppressWarnings("unused")
-public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<String, X> implements com.kamikazejam.syncengine.base.Cache<String, X> {
-    private final ConcurrentMap<String, SyncObjectLoader<X>> controllers = new ConcurrentHashMap<>();
-    private final StoreMethods<String, X> localStore = new ObjectStoreLocal<>();
-    private final StoreMethods<String, X> databaseStore = new ObjectStoreDatabase<>(this);
+public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<String, X> implements ObjectCache<X> {
+    private final ConcurrentMap<String, SyncObjectLoader<X>> loaders = new ConcurrentHashMap<>();
+    private final ObjectStoreLocal<X> localStore = new ObjectStoreLocal<>();
+    private final ObjectStoreDatabase<X> databaseStore = new ObjectStoreDatabase<>(this);
+    private final @NotNull ObjectUpdater<X> updater;
 
     public SyncObjectCache(SyncRegistration module, SyncInstantiator<String, X> instantiator, String name, Class<X> syncClass) {
         // Optional Constructor that will use the default CacheLoggerService
@@ -38,6 +40,9 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     }
     public SyncObjectCache(SyncRegistration module, SyncInstantiator<String, X> instantiator, String name, Class<X> syncClass, CacheLoggerInstantiator logger) {
         super(instantiator, name, String.class, syncClass, module, logger);
+
+        // Start updater
+        updater = new ObjectUpdater<>(this);
 
         // Start this cache
         if (!start()) {
@@ -49,37 +54,38 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
 
     @Override
     protected boolean initialize() {
+        if (!updater.start()) {
+            loggerService.error("Failed to start SyncUpdater for cache: " + name);
+            return false;
+        }
         return true;
     }
 
     @Override
     protected boolean terminate() {
-        // Saving all on shutdown from an arbitrary instance seems like a way to have save collisions
+        // Don't save -> saving all on shutdown from an arbitrary instance seems like a way to have save collisions
         //  It's the user's responsibility to save their objects when changed, which will trigger sync across instances
-//        AtomicInteger failedSaves = new AtomicInteger(0);
-//        getCached().forEach(sync -> {
-//            if (!save(sync)) {
-//                failedSaves.getAndIncrement();
-//            }
-//        });
-//        if (failedSaves.get() > 0) {
-//            loggerService.info(failedSaves + " objects failed to save during shutdown");
-//            success = false;
-//        }
+        boolean success = true;
 
-        controllers.clear();
+        // Shutdown Updater
+        if (updater.isRunning() && !updater.shutdown()) {
+            success = false;
+            loggerService.info("Failed to shutdown ObjectUpdater for cache: " + name);
+        }
+
+        loaders.clear();
         // Clear local store (frees memory)
         localStore.clear();
         // Don't clear database (can't)
 
-        return true;
+        return success;
     }
 
     @NotNull
     @Override
-    public SyncObjectLoader<X> controller(@NotNull String key) {
+    public SyncObjectLoader<X> loader(@NotNull String key) {
         Preconditions.checkNotNull(key);
-        return controllers.computeIfAbsent(key, s -> new SyncObjectLoader<>(this, s));
+        return loaders.computeIfAbsent(key, s -> new SyncObjectLoader<>(this, s));
     }
 
     @NotNull
@@ -98,24 +104,8 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
         return key;
     }
 
-    @Override
-    public @NotNull X create() {
-        return create(UUID.randomUUID());
-    }
-
     public @NotNull X create(UUID uuid) {
         return create(uuid.toString());
-    }
-
-    @Override
-    public @NotNull X create(@NotNull String id) {
-        X o = super.create();
-        o.setId(id);
-        o.setCache(this);
-        // Cache and save this object
-        cache(o);
-        o.save();
-        return o;
     }
 
     @NotNull
@@ -144,7 +134,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
         if (key == null) {
             return Optional.empty();
         }
-        return controller(key).fetch(saveToLocalCache);
+        return loader(key).fetch(saveToLocalCache);
     }
 
     @NotNull
@@ -209,7 +199,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     @NotNull
     @Override
     public Collection<X> getCached() {
-        return ((ObjectStoreLocal<X>) localStore).getLocalCache().values();
+        return localStore.getLocalCache().values();
     }
 
     @Override

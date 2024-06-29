@@ -144,6 +144,11 @@ public class FileStorage extends StorageService {
         );
     }
 
+    @Override
+    public <K, X extends Sync<K>> boolean canCache(Cache<K, X> cache) {
+        return true;
+    }
+
     // ------------------------------------------------- //
     //                 Service Methods                   //
     // ------------------------------------------------- //

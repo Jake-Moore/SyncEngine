@@ -41,6 +41,9 @@ connections:
 profiles:
   # How often should the SyncProfile auto save task run?
   autoSaveIntervalSec: 600
+  messages:
+    # Sent as the join deny reason for Players who join before the MongoDB is fully connected.
+    beforeDbConnection: "&c[{cacheName}] The database is currently offline. Please try again soon, we are working to resolve this issue as soon as possible."
 
 # Enables additional logging for debugging purposes. Can be informative for developers.
 debug: true

@@ -4,6 +4,9 @@ import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
 import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
+import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileLocal;
+import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileRedis;
+import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
 import com.kamikazejam.syncengine.server.ServerService;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +37,6 @@ public enum SyncMode {
     }
 
     private RedisService redisService = null;
-
     public @Nullable RedisService getRedisService() {
         if (this != SyncMode.NETWORKED) {
             return null;
@@ -51,7 +53,6 @@ public enum SyncMode {
     }
 
     private ServerService serverService = null;
-
     public @Nullable ServerService getServerService() {
         if (this != SyncMode.NETWORKED) {
             return null;
@@ -65,6 +66,18 @@ public enum SyncMode {
             }
         }
         return serverService;
+    }
+
+    private NetworkProfileStore networkStore = null;
+    public @NotNull NetworkProfileStore getNetworkStore() {
+        if (networkStore == null) {
+            if (this == NETWORKED) {
+                networkStore = new NetworkProfileRedis();
+            } else {
+                networkStore = new NetworkProfileLocal();
+            }
+        }
+        return networkStore;
     }
 
     public void disableServices() {

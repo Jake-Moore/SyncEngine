@@ -55,4 +55,9 @@ public abstract class StorageService extends LoggerService implements Service {
      */
     public abstract <K, X extends Sync<K>> Iterable<K> getKeys(Cache<K, X> cache);
 
+    /**
+     * @return If the StorageService is ready to be used for a cache.
+     */
+    public abstract <K, X extends Sync<K>> boolean canCache(Cache<K, X> cache);
+
 }

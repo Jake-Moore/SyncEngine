@@ -53,7 +53,7 @@ public interface StoreMethods<K, X extends Sync> {
      * Retrieve all Sync keys from this store.
      */
     @NotNull
-    Iterable<String> getKeys();
+    Iterable<K> getKeys();
 
     /**
      * Clear all Syncs from this store. No Syncs are deleted, just removed from memory.
@@ -64,7 +64,7 @@ public interface StoreMethods<K, X extends Sync> {
      * Gets the name of this storage layer.
      */
     @NotNull
-    String getStoreLayer();
+    String getLayerName();
 
     /**
      * @return How many objects are in this Store

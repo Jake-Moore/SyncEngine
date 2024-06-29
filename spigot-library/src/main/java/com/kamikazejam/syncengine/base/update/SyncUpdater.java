@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.update;
+package com.kamikazejam.syncengine.base.update;
 
 import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
@@ -14,33 +14,45 @@ import org.bukkit.plugin.IllegalPluginAccessException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
+
 /**
  * This class does nothing unless we have a RedisService (NETWORKED mode)
  */
-@SuppressWarnings({"DuplicatedCode", "unused"})
-public class SyncUpdater<K, X extends Sync<K>> implements Service {
+public abstract class SyncUpdater<K, X extends Sync<K>> implements Service {
+    protected static final String FOR_SYNC_UPDATER = "forSyncUpdater";
+    protected static final String KEY_SOURCE_SERVER = "sourceServer";
+    protected static final String KEY_SOURCE_GROUP = "sourceGroup";
+    protected static final String KEY_IDENTIFIER = "identifier";
+    protected static final String KEY_FORCE_LOAD = "forceLoad";
 
-    private static final String KEY_SOURCE_SERVER = "sourceServer";
-    private static final String KEY_SOURCE_GROUP = "sourceGroup";
-    private static final String KEY_IDENTIFIER = "identifier";
-    private static final String KEY_FORCE_LOAD = "forceLoad";
-
-    private final Cache<K, X> cache;
-    private final String channel;
-    private RedisPubSubReactiveCommands<String, String> reactive = null;
     private boolean running = false;
+    private RedisPubSubReactiveCommands<String, String> reactive = null;
 
-    public SyncUpdater(Cache<K, X> cache) {
+    protected final Cache<K, X> cache;
+    protected final String channel;
+    public SyncUpdater(Cache<K, X> cache, String channel) {
         this.cache = cache;
-        this.channel = "sync-updater-" + cache.getName();
+        this.channel = channel;
     }
 
+    // ----------------------------------------------------- //
+    //                       Abstract                        //
+    // ----------------------------------------------------- //
+    public abstract void handleUpdateType(Document document);
+    public boolean postShutdown() { return true; }
+
+
+    // ----------------------------------------------------- //
+    //                        Service                        //
+    // ----------------------------------------------------- //
     @Override
-    public boolean start() {
+    public final boolean start() {
         Preconditions.checkState(!running, "SyncUpdater is already running for cache: " + cache.getName());
 
         @Nullable RedisService redisService = EngineSource.getRedisService();
-        if (redisService == null) {
+        @Nullable ServerService serverService = EngineSource.getServerService();
+        if (redisService == null || serverService == null) {
             // Do nothing if we don't have a RedisService
             return running = true;
         }
@@ -54,15 +66,25 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
 
     @Override
     @SuppressWarnings("all")
-    public boolean shutdown() {
+    public final boolean shutdown() {
         Preconditions.checkState(running, "SyncUpdater is not running for cache: " + cache.getName());
         if (reactive != null) {
             reactive.unsubscribe(channel);
         }
         running = false;
-        return true;
+        return postShutdown();
     }
 
+    @Override
+    public final boolean isRunning() {
+        return running;
+    }
+
+
+
+    // ----------------------------------------------------- //
+    //                         Redis                         //
+    // ----------------------------------------------------- //
     /**
      * Subscribe to redis so we can receive updates, can't call this unless we are in NETWORKED mode
      */
@@ -76,8 +98,30 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
             reactive.observeChannels()
                     .filter(pm -> pm.getChannel().equals(channel))
                     .doOnNext(patternMessage -> {
-                        if (patternMessage != null && patternMessage.getMessage() != null) {
-                            receiveUpdateRequest(patternMessage.getMessage());
+                        // Can't process invalid data
+                        if (patternMessage == null || patternMessage.getMessage() == null) { return; }
+                        
+                        try {
+                            Document document = Document.parse(patternMessage.getMessage());
+                            if (document == null) { return; } // Invalid message / document -> can't process
+
+                            // Require that this redis message is for our sync-group
+                            ServerService serverService = Objects.requireNonNull(EngineSource.getServerService());
+                            String sourceGroupString = document.getString(KEY_SOURCE_GROUP);
+                            if (!serverService.getThisServer().getGroup().equalsIgnoreCase(sourceGroupString)) { return; }
+
+                            boolean forHere = document.getBoolean(FOR_SYNC_UPDATER);
+                            if (forHere) {
+                                // Only message within SyncUpdater is an update (PUSH) request
+                                receiveUpdateRequest(document);
+                            } else {
+                                // Send to super class for processing
+                                handleUpdateType(document);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            cache.getLoggerService().severe("Invalid UpdateType in SyncUpdater for packet: '" + patternMessage.getMessage() + "' in channel: " + channel);
+                        } catch (Exception ex) {
+                            cache.getLoggerService().severe(ex, "Error reading incoming packet in SyncUpdater for packet: '" + patternMessage.getMessage() + "' in channel: " + channel);
                         }
                     }).subscribe();
 
@@ -88,29 +132,22 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
         }
     }
 
-    private void receiveUpdateRequest(@NotNull String msg) {
+    // Receives a PUSH call from another server
+    private void receiveUpdateRequest(@NotNull Document document) {
         @Nullable ServerService serverService = EngineSource.getServerService();
         if (serverService == null) {
             // Do nothing if we don't have a ServerService
             return;
         }
 
-        Preconditions.checkNotNull(msg, "Message (packet) cannot be null in SyncUpdater for receiveUpdateRequest");
         try {
-            // Verify document
-            Document document = Document.parse(msg);
-            if (document == null) {
-                cache.getLoggerService().info("Document parsed was null during receiveUpdateRequest in SyncUpdater for packet: " + msg);
-                return;
-            }
-
             // Verify document keys
             String sourceServerString = document.getString(KEY_SOURCE_SERVER);
             String sourceGroup = document.getString(KEY_SOURCE_GROUP);
             String identifierString = document.getString(KEY_IDENTIFIER);
             boolean force = document.getBoolean(KEY_FORCE_LOAD, false);
             if (sourceServerString == null || identifierString == null) {
-                cache.getLoggerService().info("Source Server or Identifier were null during receiveUpdateRequest in SyncUpdater for packet: " + msg);
+                cache.getLoggerService().info("Source Server or Identifier were null during receiveUpdateRequest in SyncUpdater for packet: " + document);
                 return;
             }
 
@@ -136,15 +173,19 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
             if (!EngineSource.get().isEnabled()) {
                 return;
             }
-            cache.getLoggerService().info(e, "Error2 with received update request in SyncUpdater for packet: " + msg);
+            cache.getLoggerService().info(e, "Error2 with received update request in SyncUpdater for PUSH: " + document);
 
         } catch (Exception ex) {
-            cache.getLoggerService().info(ex, "Error with received update request in SyncUpdater for packet: " + msg);
+            cache.getLoggerService().info(ex, "Error with received update request in SyncUpdater for PUSH: " + document);
         }
     }
+    
+    
+    
+    
 
     // Default: force=false, async=true
-    public boolean pushUpdate(@NotNull X sync, boolean force, boolean async) {
+    public final boolean pushUpdate(X sync, boolean force, boolean async) {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         @Nullable ServerService serverService = EngineSource.getServerService();
         if (redisService == null || serverService == null) {
@@ -154,12 +195,9 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
 
         try {
             Preconditions.checkNotNull(sync, "Sync cannot be null in SyncUpdater (pushUpdate)");
-            final Document document = new Document();
-            document.append(KEY_SOURCE_SERVER, serverService.getThisServer().getName());
-            document.append(KEY_SOURCE_GROUP, serverService.getThisServer().getGroup());
-            document.append(KEY_IDENTIFIER, cache.keyToString(sync.getId()));
-            document.append(KEY_FORCE_LOAD, force);
-            final String json = document.toJson();
+            final String json = createSyncUpdaterDocument(sync.getId())
+                    .append(KEY_FORCE_LOAD, force)
+                    .toJson();
             if (async) {
                 cache.runAsync(() -> redisService.getRedis().async().publish(channel, json));
             } else {
@@ -178,9 +216,23 @@ public class SyncUpdater<K, X extends Sync<K>> implements Service {
         }
     }
 
+    private @NotNull Document createDocument(K identifier, boolean forSyncUpdater) {
+        ServerService serverService = Objects.requireNonNull(EngineSource.getServerService());
 
-    @Override
-    public boolean isRunning() {
-        return running;
+        Document document = new Document();
+        document.append(FOR_SYNC_UPDATER, forSyncUpdater);
+        document.append(KEY_SOURCE_SERVER, serverService.getThisServer().getName());
+        document.append(KEY_SOURCE_GROUP, serverService.getThisServer().getGroup());
+        document.append(KEY_IDENTIFIER, cache.keyToString(identifier));
+        return document;
+    }
+
+    // Marks a message as being for this abstract class' receiver
+    private @NotNull Document createSyncUpdaterDocument(K identifier) {
+        return this.createDocument(identifier, true);
+    }
+
+    public final @NotNull Document createDocument(K identifier) {
+        return this.createDocument(identifier, false);
     }
 }

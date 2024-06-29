@@ -11,6 +11,9 @@ import com.kamikazejam.syncengine.base.mode.SyncMode;
 import com.kamikazejam.syncengine.command.SyncEngineCommand;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
+import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
+import com.kamikazejam.syncengine.mode.profile.network.handshake.NetworkSwapService;
+import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
 import com.kamikazejam.syncengine.server.ServerService;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -24,12 +27,15 @@ import java.util.UUID;
 public class EngineSource {
     private static @Nullable KamiPlugin pluginSource;
     private static boolean enabled = false;
+    @Getter private static long onEnableTime = 0;
     private static final SyncEngineCommand command = new SyncEngineCommand();
     @Getter private static SyncMode syncMode;
     @Getter private static StorageMode storageMode;
     @Getter private static String syncServerId;
     @Getter private static String syncServerGroup;
     @Getter private static StorageService storageService;
+    @Getter private static NetworkProfileStore networkStore;
+    private static @Nullable NetworkSwapService swapService;
 
     /**
      * @return true IFF a plugin source was NEEDED and used for registration
@@ -54,6 +60,9 @@ public class EngineSource {
         info("Running in " + Txt.getNicedEnum(syncMode) + " mode with " + Txt.getNicedEnum(storageMode) + " storage.");
         storageService = storageMode.getStorageService();
 
+        // Load Network Store
+        networkStore = syncMode.getNetworkStore();
+
         // Load Sync ID
         KamiConfig syncConf = new KamiConfig(plugin, new File(plugin.getDataFolder(), "syncengine-server.yml"), true);
         syncServerId = syncConf.getString("sync-server-id", null);
@@ -70,6 +79,10 @@ public class EngineSource {
         syncMode.enableServices();
         storageMode.enableServices();
 
+        // Register ProfileListener
+        plugin.getServer().getPluginManager().registerEvents(new ProfileListener(), plugin);
+
+        onEnableTime = System.currentTimeMillis();
         return true;
     }
 
@@ -93,7 +106,7 @@ public class EngineSource {
         return prev;
     }
 
-    public static @NotNull JavaPlugin get() {
+    public static @NotNull KamiPlugin get() {
         if (pluginSource == null) {
             throw new RuntimeException("Plugin source not set");
         }
@@ -145,5 +158,13 @@ public class EngineSource {
 
     public static @Nullable ServerService getServerService() {
         return syncMode.getServerService();
+    }
+
+    public static @NotNull NetworkSwapService getSwapService() {
+        if (swapService == null) {
+            swapService = new NetworkSwapService();
+            swapService.start();
+        }
+        return swapService;
     }
 }

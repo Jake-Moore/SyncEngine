@@ -9,8 +9,14 @@ import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
-import com.kamikazejam.syncengine.update.SyncUpdater;
+import com.kamikazejam.syncengine.base.update.SyncUpdater;
+import com.kamikazejam.syncengine.mode.profile.SyncProfile;
+import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
+import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
+import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -20,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -38,7 +45,6 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     protected final Plugin plugin;
     protected final JavaPlugin syncPlugin;
 
-    protected SyncUpdater<K, X> updater;
     protected LoggerService loggerService;
     protected SyncInstantiator<K, X> instantiator;
     protected boolean debug = true;
@@ -70,11 +76,6 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
             success = false;
             loggerService.error("Failed to initialize internally for cache: " + name);
         }
-        updater = new SyncUpdater<>(this);
-        if (!updater.start()) {
-            success = false;
-            loggerService.error("Failed to start SyncUpdater for cache: " + name);
-        }
         internalStartAutosave();
         running = true;
 
@@ -99,26 +100,15 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         boolean success = true;
 
         // If this cache is a player cache, save all profiles of online players before we shut down
-        // TODO - uncomment when Profiles are added
-//        if (this instanceof SyncProfileCache<?>) {
-//            SyncProfileCache<?> cache = (SyncProfileCache<?>) this;
-//            Bukkit.getOnlinePlayers().forEach(p ->
-//                    ProfileListener.networkedQuit(cache.getApi(), p, cache, false));
-//        }
+        if (this instanceof SyncProfileCache<?> cache) {
+            Bukkit.getOnlinePlayers().forEach(p ->
+                    ProfileListener.quit(p, cache, false));
+        }
 
         // terminate() handles the rest of the cache shutdown
         if (!terminate()) {
             success = false;
             loggerService.info("Failed to terminate internally for cache: " + name);
-        }
-
-        if (updater != null) {
-            if (updater.isRunning()) {
-                if (!updater.shutdown()) {
-                    success = false;
-                    loggerService.info("Failed to shutdown SyncUpdater for cache: " + name);
-                }
-            }
         }
 
         running = false;
@@ -149,16 +139,17 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     @ApiStatus.Internal
     protected abstract boolean terminate();
 
+    /**
+     * Get the sync updater for this cache
+     */
+    protected abstract @NotNull SyncUpdater<K, X> getUpdater();
+
+
     @Override
     public boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async) {
         Preconditions.checkNotNull(sync, "Sync cannot be null for pushUpdate");
-        if (updater != null) {
-            loggerService.debug("PUSH " + keyToString(sync.getId()) + " (v" + sync.getVersion() + "): Force=" + forceLoad);
-            return updater.pushUpdate(sync, forceLoad, async);
-        } else {
-            loggerService.info("Couldn't pushUpdate for Sync " + keyToString(sync.getId()) + ": SyncUpdater is null!");
-            return false;
-        }
+        loggerService.debug("PUSH " + keyToString(sync.getId()) + " (v" + sync.getVersion() + "): Force=" + forceLoad);
+        return getUpdater().pushUpdate(sync, forceLoad, async);
     }
 
     @NotNull
@@ -285,9 +276,15 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     }
 
     @Override
-    public @NotNull X create() {
+    public @NotNull X create(@NotNull K key) {
         X x = instantiator.instantiate();
         x.initialized();
+
+        x.setId(key);
+        x.setCache(this);
+        // Cache and save this object
+        cache(x);
+        x.save();
         return x;
     }
 
@@ -344,21 +341,24 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         return dependingCaches;
     }
 
-    // TODO
-//    @Override @NotNull
-//    public final RedisNetworkService getNetworkService() {
-//        return SyncEnginePlugin.get().getNetworkService();
-//    }
-//
-//    @Override
-//    public <T extends SyncProfile> Optional<NetworkProfile> getNetworked(@NotNull T sync) {
-//        Preconditions.checkNotNull(sync);
-//        return getNetworked(sync.getUniqueId());
-//    }
-//    @Override
-//    public Optional<NetworkProfile> getNetworked(@NotNull UUID key) {
-//        return getNetworkService().get(key);
-//    }
+    @Override
+    @NotNull
+    public final NetworkProfileStore getNetworkStore() {
+        return EngineSource.getNetworkStore();
+    }
+
+    @Override
+    @NotNull
+    public final <T extends SyncProfile> Optional<NetworkProfile> getNetworked(@NotNull T sync) {
+        Preconditions.checkNotNull(sync);
+        return getNetworked(sync.getUniqueId());
+    }
+
+    @Override
+    @NotNull
+    public final Optional<NetworkProfile> getNetworked(@NotNull UUID key) {
+        return getNetworkStore().get(key);
+    }
 
     @Override
     public @NotNull SyncInstantiator<K, X> getInstantiator() {
