@@ -7,6 +7,7 @@ import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import com.kamikazejam.syncengine.connections.config.MongoConf;
 import com.kamikazejam.syncengine.connections.monitor.MongoMonitor;
+import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import com.mongodb.*;
 import com.mongodb.client.MongoClient;
@@ -24,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 import org.mongojack.JacksonMongoCollection;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.kamikazejam.syncengine.util.JacksonUtil.ID_FIELD;
@@ -193,12 +193,10 @@ public class MongoStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> Set<K> getKeys(Cache<K, X> cache) {
-        // TODO find a better way to get keys (without having to load the entire object)
-        Spliterator<X> spl = getJackson(cache).find().spliterator();
-        return StreamSupport.stream(spl, false)
-                .map(Sync::getId)
-                .collect(Collectors.toSet());
+    public <K, X extends Sync<K>> Iterable<K> getKeys(Cache<K, X> cache) {
+        // Fetch all documents, but use Projection to only retrieve the ID field
+        Iterator<X> iterator = getJackson(cache).find().projection(Projections.include(ID_FIELD)).iterator();
+        return () -> new TransformingIterator<>(iterator, Sync::getId);
     }
 
     // ------------------------------------------------- //

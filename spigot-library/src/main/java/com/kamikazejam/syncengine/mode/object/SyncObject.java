@@ -68,13 +68,13 @@ public abstract class SyncObject implements Sync<String> {
     }
 
     @Override
-    public boolean save() {
+    public CompletableFuture<Boolean> save() {
         return this.getCache().save(this);
     }
 
     @Override
-    public CompletableFuture<Boolean> saveAsync() {
-        return this.getCache().saveAsync(this);
+    public boolean saveSynchronously() {
+        return this.getCache().saveSynchronously(this);
     }
 
     @NotNull

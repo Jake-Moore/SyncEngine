@@ -6,7 +6,8 @@ import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
-import com.kamikazejam.syncengine.connections.storage.iterable.SyncIterable;
+import com.kamikazejam.syncengine.connections.storage.iterable.SyncFilesIterable;
+import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.plugin.Plugin;
@@ -16,11 +17,10 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("unnused")
 public class FileStorage extends StorageService {
@@ -123,21 +123,24 @@ public class FileStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>> Iterable<X> getAll(Cache<K, X> cache) {
-        return new SyncIterable<>(cache, getCacheFolder(cache).toPath());
+        return new SyncFilesIterable<>(cache, getCacheFolder(cache).toPath());
     }
 
     @Override
-    public <K, X extends Sync<K>> Set<K> getKeys(Cache<K, X> cache) {
-        @Nullable File[] files = getCacheFolder(cache).listFiles();
-        if (files == null) { return Set.of(); }
+    public <K, X extends Sync<K>> Iterable<K> getKeys(Cache<K, X> cache) {
+        @Nullable File[] array = getCacheFolder(cache).listFiles();
+        if (array == null) { return Set.of(); }
+        // Convert to a non-null list
+        List<File> files = new ArrayList<>();
+        for (File file : array) {
+            if (file == null) { continue; }
+            files.add(file);
+        }
 
-        // Stream all files in the folder, filter out nulls, map to the key, and collect to a set
-        return Arrays.stream(files)
-                .filter(Objects::nonNull)
-                // Cut the .json off the file name
-                .map((f) -> f.getName().substring(0, f.getName().lastIndexOf('.')))
-                .map(cache::keyFromString)
-                .collect(Collectors.toSet());
+        // Map each file to its key in an iterator
+        return () -> new TransformingIterator<>(files.iterator(), f ->
+                cache.keyFromString(f.getName().substring(0, f.getName().lastIndexOf('.')))
+        );
     }
 
     // ------------------------------------------------- //

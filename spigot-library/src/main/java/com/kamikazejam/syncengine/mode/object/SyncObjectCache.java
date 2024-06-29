@@ -9,6 +9,7 @@ import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
+import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.mode.object.store.ObjectStoreDatabase;
 import com.kamikazejam.syncengine.mode.object.store.ObjectStoreLocal;
 import lombok.Getter;
@@ -164,38 +165,28 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     @Override
     public Iterable<X> getAll(boolean cacheSyncs) {
         // Create an Iterable that iterates through all database objects, and updates local objects as necessary
-        Iterator<X> databaseIterable = databaseStore.getAll().iterator();
-        return () -> new Iterator<>() {
-            @Override
-            public boolean hasNext() {
-                // This Iterable extends the database Iterable
-                return databaseIterable.hasNext();
-            }
-
-            @Override
-            public X next() {
-                // Load the next database object
-                @NotNull X next = databaseIterable.next();
-
-                // Load the local object, and if it exists -> update it from newer (database ver)
-                Optional<X> o = localStore.get(next.getId());
-                o.ifPresent(sync -> {
-                    // Don't attempt to load database version if its older
-                    if (next.getVersion() < sync.getVersion()) { return; }
-                    SyncObjectCache.this.updateSyncFromNewer(sync, next);
-                });
-                // Find the sync object to return
-                @NotNull X sync = o.orElse(next);
-
-                // Verify it has the correct cache and cache it if necessary
-                next.setCache(SyncObjectCache.this);
-                if (o.isEmpty() && cacheSyncs) {
-                    // Won't call updateSyncFromNewer since o is empty
-                    SyncObjectCache.this.cache(next);
+        Iterator<X> dbIterator = databaseStore.getAll().iterator();
+        return () -> new TransformingIterator<>(dbIterator, x -> {
+            // Load the local object, and if it exists -> update it from newer (database ver)
+            Optional<X> o = localStore.get(x.getId());
+            o.ifPresent(sync -> {
+                // Don't attempt to load database version if its older
+                if (x.getVersion() < sync.getVersion()) {
+                    return;
                 }
-                return sync;
+                SyncObjectCache.this.updateSyncFromNewer(sync, x);
+            });
+            // Find the sync object to return
+            @NotNull X sync = o.orElse(x);
+
+            // Verify it has the correct cache and cache it if necessary
+            x.setCache(SyncObjectCache.this);
+            if (o.isEmpty() && cacheSyncs) {
+                // Won't call updateSyncFromNewer since o is empty
+                SyncObjectCache.this.cache(x);
             }
-        };
+            return sync;
+        });
     }
 
     @Override
@@ -208,7 +199,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
             }
 
             total.getAndIncrement();
-            if (!save(object)) {
+            if (!saveSynchronously(object)) {
                 failures.getAndIncrement();
             }
         }
@@ -248,5 +239,10 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     @Override
     public long getLocalCacheSize() {
         return localStore.size();
+    }
+
+    @Override
+    public @NotNull Iterable<String> getIDs() {
+        return databaseStore.getKeys();
     }
 }

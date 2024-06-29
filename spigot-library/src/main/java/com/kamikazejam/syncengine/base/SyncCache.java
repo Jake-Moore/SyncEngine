@@ -204,7 +204,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     }
 
     @Override
-    public boolean save(@NotNull X sync) {
+    public boolean saveSynchronously(@NotNull X sync) {
         Preconditions.checkNotNull(sync);
         if (sync.isReadOnly()) {
             KUtil.printStackTrace("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
@@ -230,14 +230,14 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     }
 
     @Override
-    public CompletableFuture<Boolean> saveAsync(@NotNull X sync) {
+    public CompletableFuture<Boolean> save(@NotNull X sync) {
         Preconditions.checkNotNull(sync);
         if (sync.isReadOnly()) {
             KUtil.printStackTrace("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
         }
 
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        runAsync(() -> future.complete(save(sync)));
+        runAsync(() -> future.complete(saveSynchronously(sync)));
         return future;
     }
 

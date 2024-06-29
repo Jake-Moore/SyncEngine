@@ -12,10 +12,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 
-public class SyncIterable<K, X extends Sync<K>> implements Iterable<X> {
+public class SyncFilesIterable<K, X extends Sync<K>> implements Iterable<X> {
     private final Cache<K, X> cache;
     private final Path folderPath;
-    public SyncIterable(Cache<K, X> cache, Path folderPath) {
+    public SyncFilesIterable(Cache<K, X> cache, Path folderPath) {
         this.cache = cache;
         this.folderPath = folderPath;
     }

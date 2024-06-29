@@ -35,6 +35,12 @@ connections:
       enabled: false
       password: 'changeme'
 
+# ------------------------------------------------------------- #
+#                             CACHES                            #
+# ------------------------------------------------------------- #
+profiles:
+  # How often should the SyncProfile auto save task run?
+  autoSaveIntervalSec: 600
 
 # Enables additional logging for debugging purposes. Can be informative for developers.
 debug: true

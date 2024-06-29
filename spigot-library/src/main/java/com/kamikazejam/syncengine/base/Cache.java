@@ -55,7 +55,8 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * @param sync The Sync to save.
      * @return If the Sync was saved.
      */
-    boolean save(@NotNull X sync);
+    @Blocking
+    boolean saveSynchronously(@NotNull X sync);
 
     /**
      * Save a Sync to this cache and to the database asynchronously.
@@ -63,7 +64,7 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * @param sync The Sync to save.
      * @return A future that supplies if the Sync was saved.
      */
-    CompletableFuture<Boolean> saveAsync(@NotNull X sync);
+    CompletableFuture<Boolean> save(@NotNull X sync);
 
     /**
      * Adds a Sync to this cache.
@@ -106,6 +107,14 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     Iterable<X> getAll(boolean cacheSyncs);
 
     /**
+     * Retrieves ALL Sync IDs from the database.
+     * @return An Iterable of all Syncs, for sequential processing.
+     */
+    @Blocking
+    @NotNull
+    Iterable<K> getIDs();
+
+    /**
      * Gets all Sync objects that are in this cache.
      */
     @NotNull
@@ -124,10 +133,11 @@ public interface Cache<K, X extends Sync<K>> extends Service {
 
     /**
      * Saves all Sync objects in this cache to the database.
+     * Blocks until completion
      *
      * @return a {@link CacheSaveResult} with information about how many objects were saved.
      */
-    @NotNull
+    @NotNull @Blocking
     CacheSaveResult saveAll();
 
     /**

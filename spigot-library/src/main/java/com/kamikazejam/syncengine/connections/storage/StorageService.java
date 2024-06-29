@@ -8,7 +8,6 @@ import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Defines the minimum set of methods all Storage services must implement.
@@ -54,6 +53,6 @@ public abstract class StorageService extends LoggerService implements Service {
     /**
      * Retrieve all Sync keys from a specific cache.
      */
-    public abstract <K, X extends Sync<K>> Set<K> getKeys(Cache<K, X> cache);
+    public abstract <K, X extends Sync<K>> Iterable<K> getKeys(Cache<K, X> cache);
 
 }
