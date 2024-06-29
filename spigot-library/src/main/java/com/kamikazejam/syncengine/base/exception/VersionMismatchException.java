@@ -10,12 +10,10 @@ public class VersionMismatchException extends SyncException {
 
     private final long localVer;
     private final long databaseVer;
-    private final @NotNull String databaseJson;
-    public VersionMismatchException(Cache<?, ?> cache, long localVer, long databaseVer, @NotNull String databaseJson) {
+    public VersionMismatchException(Cache<?, ?> cache, long localVer, long databaseVer) {
         super("Version Mismatch: localVer=" + localVer + " databaseVer=" + databaseVer, cache);
         this.localVer = localVer;
         this.databaseVer = databaseVer;
-        this.databaseJson = databaseJson;
     }
 
 }

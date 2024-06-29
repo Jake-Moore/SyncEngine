@@ -42,7 +42,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
         if (!start()) {
             // Data loss is not tolerated in SyncEngine, shutdown to prevent issues
             syncPlugin.getLogger().severe("Failed to start Object Cache: " + name);
-            Bukkit.getServer().shutdown();
+            Bukkit.shutdown();
         }
     }
 

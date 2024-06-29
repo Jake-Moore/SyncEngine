@@ -102,6 +102,7 @@ public class RedisService extends LoggerService implements Service {
                 this.redisMonitor = new RedisMonitor(this);
             }
             if (!this.redisMonitor.isRunning()) {
+                // Always true, no need to check
                 this.redisMonitor.start();
             }
         }

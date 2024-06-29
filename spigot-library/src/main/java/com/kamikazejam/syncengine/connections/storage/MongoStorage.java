@@ -4,19 +4,23 @@ import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
+import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import com.kamikazejam.syncengine.connections.config.MongoConf;
 import com.kamikazejam.syncengine.connections.monitor.MongoMonitor;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import com.mongodb.*;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import org.bson.Document;
 import org.bson.UuidRepresentation;
+import org.bson.conversions.Bson;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.mongojack.JacksonMongoCollection;
 
 import java.util.*;
@@ -55,7 +59,7 @@ public class MongoStorage extends StorageService {
         this.running = true;
 
         if (!mongo) {
-            this.error("Failed to start MongoService, connection failed.");
+            this.error("Failed to start MongoStorage, connection failed.");
             return false;
         }
         // Client was created, MongoMonitor should log more as the connection succeeds or fails
@@ -66,7 +70,7 @@ public class MongoStorage extends StorageService {
     public boolean shutdown() {
         // If not running, warn and return true (we are already shutdown)
         if (!running) {
-            this.warn("MongoService.shutdown() called while service is not running!");
+            this.warn("MongoStorage.shutdown() called while service is not running!");
             return true;
         }
 
@@ -75,7 +79,7 @@ public class MongoStorage extends StorageService {
         this.running = false;
 
         if (!mongo) {
-            this.error("Failed to shutdown MongoService, disconnect failed.");
+            this.error("Failed to shutdown MongoStorage, disconnect failed.");
             return false;
         }
 
@@ -92,7 +96,7 @@ public class MongoStorage extends StorageService {
     public @NotNull <K, X extends Sync<K>> Optional<X> get(Cache<K, X> cache, K key) {
         Preconditions.checkNotNull(key);
         try {
-            Document query = new Document(ID_FIELD, cache.keyToString(key));
+            Bson query = Filters.eq(ID_FIELD, cache.keyToString(key));
             Optional<X> o = Optional.ofNullable(getJackson(cache).findOne(query));
             // Initialize the object if it exists
             o.ifPresent(x -> {
@@ -114,8 +118,20 @@ public class MongoStorage extends StorageService {
 
         // Try saving to MongoDB with Jackson and catch/fix a host of possible errors we can receive
         try {
+            // **Optimistic Versioning**
+            //  1. Fetch the database object (to compare version)
+            //     - Use Projections to retrieve only the necessary fields
+            Bson query = Filters.eq(ID_FIELD, cache.keyToString(sync.getId()));
+            @Nullable X database = getJackson(cache).find(query).projection(Projections.include(ID_FIELD, "version")).first();
+            @Nullable Long dbVer = (database == null) ? null : database.getVersion();
 
-            // TODO add optimistic versioning
+            // 2. Apply Optimistic Versioning (only fails with a valid, non-equal database version)
+            if (dbVer != null && dbVer != sync.getVersion()) {
+                throw new VersionMismatchException(cache, sync.getVersion(), dbVer);
+            }
+
+            // 3. Continue (Version passed, save the object)
+            sync.setVersion(sync.getVersion() + 1);
             getJackson(cache).save(sync);
             return true;
         } catch (MongoWriteException ex1) {
@@ -138,7 +154,7 @@ public class MongoStorage extends StorageService {
     public <K, X extends Sync<K>> boolean has(Cache<K, X> cache, K key) {
         Preconditions.checkNotNull(key);
         try {
-            Document query = new Document(ID_FIELD, cache.keyToString(key));
+            Bson query = Filters.eq(ID_FIELD, cache.keyToString(key));
             return getJackson(cache).countDocuments(query) > 0;
         } catch (MongoException ex) {
             cache.getLoggerService().info(ex, "MongoDB error check if Sync exists in MongoDB Layer: " + key);
@@ -158,7 +174,7 @@ public class MongoStorage extends StorageService {
     public <K, X extends Sync<K>> boolean remove(Cache<K, X> cache, K key) {
         Preconditions.checkNotNull(key);
         try {
-            Document query = new Document(ID_FIELD, cache.keyToString(key));
+            Bson query = Filters.eq(ID_FIELD, cache.keyToString(key));
             return getJackson(cache).deleteMany(query).getDeletedCount() > 0;
         } catch (MongoException ex) {
             cache.getLoggerService().info(ex, "MongoDB error removing Sync from MongoDB Layer: " + key);
@@ -187,7 +203,7 @@ public class MongoStorage extends StorageService {
     // ------------------------------------------------- //
     public boolean connectMongo() {
         // Can only have one MongoClient instance
-        Preconditions.checkState(this.mongoClient == null, "[MongoService] MongoClient instance already exists!");
+        Preconditions.checkState(this.mongoClient == null, "[MongoStorage] MongoClient instance already exists!");
 
         try {
             MongoClientSettings.Builder settingsBuilder = MongoClientSettings.builder()
@@ -198,6 +214,19 @@ public class MongoStorage extends StorageService {
             ConnectionString connectionString = new ConnectionString(MongoConf.get().getUri());
             settingsBuilder.applyConnectionString(connectionString);
             this.mongoClient = MongoClients.create(settingsBuilder.build());
+
+            // Verify this client connection is valid
+            try {
+                EngineSource.get().getLogger().info("CONNECTING TO MONGODB (30 second timeout)...");
+                List<String> ignored = StreamSupport.stream(this.mongoClient.listDatabaseNames().spliterator(), false).toList();
+            }catch (MongoTimeoutException ignored) {
+                // Connection failed (invalid?)
+                return false;
+            }catch (Throwable t) {
+                t.printStackTrace();
+                return false;
+            }
+
             // the datastore will be setup in the service class
             // If MongoDB fails it will automatically attempt to reconnect until it connects
             return true;

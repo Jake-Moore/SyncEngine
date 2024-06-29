@@ -1,8 +1,11 @@
 package com.kamikazejam.syncengine.base.mode;
 
 import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
+import com.kamikazejam.kamicommon.util.StringUtil;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.server.ServerService;
+import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +42,10 @@ public enum SyncMode {
 
         if (redisService == null) {
             redisService = new RedisService();
-            redisService.start();
+            if (!redisService.start()) {
+                EngineSource.get().getLogger().severe(StringUtil.t("&cFailed to start RedisService, shutting down..."));
+                Bukkit.shutdown();
+            }
         }
         return redisService;
     }
@@ -53,7 +59,10 @@ public enum SyncMode {
 
         if (serverService == null) {
             serverService = new ServerService();
-            serverService.start();
+            if (!serverService.start()) {
+                EngineSource.get().getLogger().severe(StringUtil.t("&cFailed to start ServerService, shutting down..."));
+                Bukkit.shutdown();
+            }
         }
         return serverService;
     }

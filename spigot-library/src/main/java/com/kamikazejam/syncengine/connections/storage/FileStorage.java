@@ -42,7 +42,7 @@ public class FileStorage extends StorageService {
 
             // Optimistic Versioning (only fails with a valid, non-equal database version)
             if (dbVer != null && dbVer != sync.getVersion()) {
-                throw new VersionMismatchException(cache, sync.getVersion(), dbVer, json);
+                throw new VersionMismatchException(cache, sync.getVersion(), dbVer);
             }
 
             // Increment the Version and write the file

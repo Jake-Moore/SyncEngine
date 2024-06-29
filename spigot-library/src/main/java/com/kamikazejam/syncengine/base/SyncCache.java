@@ -9,7 +9,6 @@ import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
-import com.kamikazejam.syncengine.connections.storage.StorageService;
 import com.kamikazejam.syncengine.update.SyncUpdater;
 import lombok.Getter;
 import org.bukkit.plugin.IllegalPluginAccessException;
@@ -64,24 +63,17 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
      */
     @Override
     public final boolean start() {
-        StorageService storageService = EngineSource.getStorageService();
-        // Start the Database if Necessary
-        if (!storageService.isRunning() && !storageService.start()) {
-            loggerService.warn("[SyncCache.start] Failed to start Storage Service for cache: " + name);
-            return false;
-        }
-
         Preconditions.checkState(!running, "Cache " + name + " is already started!");
         Preconditions.checkNotNull(instantiator, "Instantiator must be set before calling start() for cache " + name);
         boolean success = true;
         if (!initialize()) {
             success = false;
-            loggerService.info("Failed to initialize internally for cache: " + name);
+            loggerService.error("Failed to initialize internally for cache: " + name);
         }
         updater = new SyncUpdater<>(this);
         if (!updater.start()) {
             success = false;
-            loggerService.info("Failed to start SyncUpdater for cache: " + name);
+            loggerService.error("Failed to start SyncUpdater for cache: " + name);
         }
         internalStartAutosave();
         running = true;
