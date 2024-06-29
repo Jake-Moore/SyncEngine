@@ -9,6 +9,7 @@ import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import com.kamikazejam.syncengine.connections.storage.iterable.SyncFilesIterable;
 import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.util.JacksonUtil;
+import com.kamikazejam.syncengine.util.ThreadSafeFileHandler;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -16,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +47,8 @@ public class FileStorage extends StorageService {
 
             // Increment the Version and write the file
             sync.setVersion(sync.getVersion() + 1);
-            FileUtils.write(targetFile, JacksonUtil.toJson(sync), StandardCharsets.UTF_8);
+            // Use ThreadSafeFileHandler
+            ThreadSafeFileHandler.writeFile(targetFile.toPath(), JacksonUtil.toJson(sync));
             return true;
         } catch (VersionMismatchException v) {
             // pass through
@@ -60,8 +61,8 @@ public class FileStorage extends StorageService {
 
     private @Nullable String readJsonFromFile(@NotNull File targetFile) throws IOException {
         if (!targetFile.exists()) { return null; }
-        @Nullable String json = FileUtils.readFileToString(targetFile, StandardCharsets.UTF_8);
-        return (json == null || json.isEmpty()) ? null : json;
+        @Nullable String json = ThreadSafeFileHandler.readFile(targetFile.toPath());
+        return json.isEmpty() ? null : json;
     }
 
     private @Nullable Long getVersionFromJson(@Nullable String json) {
@@ -82,8 +83,8 @@ public class FileStorage extends StorageService {
             return Optional.empty();
         }
         try {
-            String json = FileUtils.readFileToString(targetFile, StandardCharsets.UTF_8);
-            return Optional.ofNullable(JacksonUtil.fromJson(cache.getSyncClass(), json));
+            String json = ThreadSafeFileHandler.readFile(targetFile.toPath());
+            return Optional.of(JacksonUtil.fromJson(cache.getSyncClass(), json));
         } catch (Throwable t) {
             cache.getLoggerService().severe(t, "Failed to read file: " + targetFile.getAbsolutePath());
             return Optional.empty();

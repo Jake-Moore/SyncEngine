@@ -2,6 +2,7 @@ package com.kamikazejam.syncengine.base;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
@@ -99,6 +100,7 @@ public interface Sync<K> {
      *
      * @return CompletableFuture<Boolean> if the save was successful
      */
+    @NonBlocking
     CompletableFuture<Boolean> save();
 
     /**

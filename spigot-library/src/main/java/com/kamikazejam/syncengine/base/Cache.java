@@ -10,6 +10,7 @@ import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -64,6 +65,7 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * @param sync The Sync to save.
      * @return A future that supplies if the Sync was saved.
      */
+    @NonBlocking
     CompletableFuture<Boolean> save(@NotNull X sync);
 
     /**
