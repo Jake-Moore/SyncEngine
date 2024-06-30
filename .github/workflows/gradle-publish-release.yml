@@ -54,11 +54,6 @@ jobs:
       - name: Display Version
         run: echo "Version is ${{ steps.extract_version.outputs.version }}"
 
-      - name: Prepare Spigot Jar
-        if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
-        run: |
-          mv spigot-jar/build/libs/spigot-jar-${{ steps.extract_version.outputs.version }}.jar spigot-jar/build/libs/SyncEngine-${{ steps.extract_version.outputs.version }}.jar
-
       - name: Create Release (Spigot Jar + Module Jars)
         if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
         uses: ncipollo/release-action@v1

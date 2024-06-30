@@ -42,6 +42,7 @@ tasks {
     }
 
     shadowJar {
+        archiveBaseName.set(rootProject.name)
         archiveClassifier.set("")
         configurations = listOf(project.configurations.shadow.get())
 
