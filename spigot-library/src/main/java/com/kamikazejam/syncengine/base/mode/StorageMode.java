@@ -33,7 +33,7 @@ public enum StorageMode {
 
     public @NotNull File getFileStorageFolder() {
         if (relativePath == null) {
-            relativePath = EngineSource.get().getConfig().getString("connections.FILE.directoryName", "data");
+            relativePath = EngineSource.getConfig().getString("connections.FILE.directoryName", "data");
         }
         File file = new File(EngineSource.get().getDataFolder(), relativePath);
         if (!file.exists() && !file.mkdirs()) {

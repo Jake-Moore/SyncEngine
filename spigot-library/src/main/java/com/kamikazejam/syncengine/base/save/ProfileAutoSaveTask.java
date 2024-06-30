@@ -46,7 +46,7 @@ public class ProfileAutoSaveTask<X extends SyncProfile> implements Runnable {
             //   Scheduled on startup. This prevents simultaneous saving from any other loops running, and avoids
             //   Morphia errors from that.
             BukkitScheduler scheduler = cache.getPlugin().getServer().getScheduler();
-            long period = EngineSource.get().getConfig().getLong("profiles.autoSaveIntervalSec");
+            long period = EngineSource.getConfig().getLong("profiles.autoSaveIntervalSec");
             // Run the task every 600 seconds (by default)
             this.task = scheduler.runTaskTimerAsynchronously(cache.getPlugin(), this, (period * 20L) + 4, (period * 20L));
         }

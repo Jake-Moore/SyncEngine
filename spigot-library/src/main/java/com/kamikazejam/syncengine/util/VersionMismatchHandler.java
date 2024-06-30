@@ -5,6 +5,7 @@ import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
+import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
@@ -12,7 +13,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class VersionMismatchHandler {
@@ -46,7 +46,8 @@ public class VersionMismatchHandler {
 
         // Use reflection to grab all fields and compare them
         //  The extra cost of reflection is accepted as this is a repair operation (should be async)
-        info(" ", "VersionMismatchException (local:" + ex.getLocalVer() + " db:" + ex.getDatabaseVer() + ") - Detecting Field Changes:");
+        info("------------------------------------------",
+                "VersionMismatchException [" + cache.getName() + "] (local:" + ex.getLocalVer() + " db:" + ex.getDatabaseVer() + "):");
 
         for (Field field : ReflectionUtil.getAllFields(cache.getSyncClass())) {
             // Skip the version field
@@ -73,7 +74,8 @@ public class VersionMismatchHandler {
         if (!changed) {
             throw new IllegalStateException("VersionMismatchException but no changes detected!?");
         }
-        info("Field Comparison Completed, re-trying save...", " ");
+        info("Field Comparison Completed, re-trying save...",
+                "------------------------------------------");
         return database;
     }
 
@@ -82,8 +84,8 @@ public class VersionMismatchHandler {
     // Utility method to log to SyncEngine logger if debug is enabled
     private static void info(String... s) {
         if (!EngineSource.isDebug()) { return; }
-        Logger logger =  EngineSource.get().getLogger();
-        Arrays.stream(s).forEach(m -> logger.info(StringUtil.t("&c" + m)));
+        ConsoleCommandSender sender = EngineSource.get().getServer().getConsoleSender();
+        Arrays.stream(s).forEach(m -> sender.sendMessage(StringUtil.t("&c" + m)));
     }
 
     // Generic Interface so we can call the SyncStore methods for getting and saving

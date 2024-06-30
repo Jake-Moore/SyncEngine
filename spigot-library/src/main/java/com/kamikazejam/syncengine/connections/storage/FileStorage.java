@@ -62,7 +62,7 @@ public class FileStorage extends StorageService {
     private @Nullable String readJsonFromFile(@NotNull File targetFile) throws IOException {
         if (!targetFile.exists()) { return null; }
         @Nullable String json = ThreadSafeFileHandler.readFile(targetFile.toPath());
-        return json.isEmpty() ? null : json;
+        return (json == null || json.isEmpty()) ? null : json;
     }
 
     private @Nullable Long getVersionFromJson(@Nullable String json) {
@@ -83,7 +83,10 @@ public class FileStorage extends StorageService {
             return Optional.empty();
         }
         try {
-            String json = ThreadSafeFileHandler.readFile(targetFile.toPath());
+            @Nullable String json = ThreadSafeFileHandler.readFile(targetFile.toPath());
+            if (json == null || json.isEmpty()) {
+                return Optional.empty();
+            }
             return Optional.of(JacksonUtil.fromJson(cache.getSyncClass(), json));
         } catch (Throwable t) {
             cache.getLoggerService().severe(t, "Failed to read file: " + targetFile.getAbsolutePath());

@@ -13,6 +13,7 @@ public class StandaloneProfileLoader {
         Optional<X> localSync = L.cache.getLocalStore().get(L.uuid);
         if (localSync.isPresent()) {
             L.sync = localSync.get();
+            L.sync.setCache(L.cache);
             return Optional.of(L.sync);
         }
 
@@ -34,13 +35,14 @@ public class StandaloneProfileLoader {
 
             // Assume some other kind of failure:
             L.denyJoin = true;
-            L.joinDenyReason = StringUtil.t(EngineSource.get().getConfig().getString("profiles.messages.beforeDbConnection")
+            L.joinDenyReason = StringUtil.t(EngineSource.getConfig().getString("profiles.messages.beforeDbConnection")
                     .replace("{cacheName}", L.cache.getName()));
             L.sync = null;
             return Optional.empty();
         }
         // We have a valid sync
         L.sync = o.get();
+        L.sync.setCache(L.cache);
 
         // If we are
         if (L.login) {

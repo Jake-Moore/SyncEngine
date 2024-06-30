@@ -25,8 +25,8 @@ import java.util.concurrent.CompletableFuture;
 @Setter @SuppressWarnings("unused")
 public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
 
-    protected final SyncProfileCache<X> cache;
-    protected final UUID uuid;
+    protected final @NotNull SyncProfileCache<X> cache;
+    protected final @NotNull UUID uuid;
     protected String username = null;
     /**
      * Whether this loader is being used during a login operation
@@ -79,7 +79,7 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
             StorageService storageService = EngineSource.getStorageService();
             if (!storageService.canCache(cache)) {
                 denyJoin = true;
-                joinDenyReason = StringUtil.t(EngineSource.get().getConfig().getString("profiles.messages.beforeDbConnection")
+                joinDenyReason = StringUtil.t(EngineSource.getConfig().getString("profiles.messages.beforeDbConnection")
                         .replace("{cacheName}", cache.getName()));
                 return Optional.empty();
             }
@@ -113,10 +113,6 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
 
     @NotNull
     public CompletableFuture<X> cacheOrCreate() {
-
-        CompletableFuture<X> future = new CompletableFuture<>();
-
-
         return CompletableFuture.supplyAsync(() -> {
             Optional<X> o = fetch();
             if (o.isPresent()) {

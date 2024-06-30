@@ -232,7 +232,6 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
     @Override
     public X get(@NotNull Player player) {
         Preconditions.checkNotNull(player);
-        Preconditions.checkState(PlayerUtil.isFullyValidPlayer(player), "Player is not valid: " + player.getName());
         SyncProfileLoader<X> loader = this.loader(player.getUniqueId());
         loader.setLogin(false);
         try {
