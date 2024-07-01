@@ -9,6 +9,7 @@ import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import com.kamikazejam.syncengine.util.Settings;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
@@ -28,22 +29,20 @@ public class NetworkedProfileLoader {
         ServerService serverService = EngineSource.getServerService();
         Preconditions.checkNotNull(serverService, "ServerService is null");
 
-        if (!L.login) {
-            @Nullable Player player = L.cache.getPlugin().getServer().getPlayer(L.uuid);
+        @Nullable Player player = Bukkit.getServer().getPlayer(L.uuid);
+        if (!L.login && player != null && player.isOnline()) {
             // For PlayerJoinEvent calls, isValid may be false, but isOnline is true
             // We just care about them being online (indicator we can load this Profile from local)
-            if (player != null && player.isOnline()) {
-                L.load(true);
-                // Just getting them from the cache when they are online, skip all the other shit and just return this.
-                // For performance :)
-                if (L.sync != null) {
-                    if (!L.cache.isCached(L.uuid)) {
-                        L.cache.cache(L.sync);
-                    }
-                    L.sync = L.cache.getLocalStore().get(L.uuid).orElseThrow();
-                    L.sync.setCache(L.cache);
-                    return Optional.of(L.sync);
+
+            L.load(true);
+            // Try to retrieve from the cache when they are online, skipping handshake logic.
+            if (L.sync != null) {
+                if (!L.cache.isCached(L.uuid)) {
+                    L.cache.cache(L.sync);
                 }
+                L.sync = L.cache.getLocalStore().get(L.uuid).orElseThrow();
+                L.sync.setCache(L.cache);
+                return Optional.of(L.sync);
             }
         }
 

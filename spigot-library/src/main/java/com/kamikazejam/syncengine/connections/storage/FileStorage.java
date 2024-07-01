@@ -148,7 +148,7 @@ public class FileStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> boolean canCache() {
+    public boolean canCache() {
         return true;
     }
 

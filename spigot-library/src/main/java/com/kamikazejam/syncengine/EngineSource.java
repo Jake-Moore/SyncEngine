@@ -28,7 +28,7 @@ public class EngineSource {
     private static @Nullable KamiPlugin pluginSource;
     private static boolean enabled = false;
     @Getter private static long onEnableTime = 0;
-    private static final SyncEngineCommand command = new SyncEngineCommand();
+    private static SyncEngineCommand command;
     @Getter private static SyncMode syncMode;
     @Getter private static StorageMode storageMode;
     @Getter private static String syncServerId;
@@ -73,11 +73,13 @@ public class EngineSource {
             syncConf.save();
         }
 
-        // Load Commands
-        command.registerCommand(plugin);
         // Enable Services
         syncMode.enableServices();
         storageMode.enableServices();
+
+        // Load Commands
+        command = new SyncEngineCommand(getServerService());
+        command.registerCommand(plugin);
 
         // Register ProfileListener
         plugin.getServer().getPluginManager().registerEvents(new ProfileListener(), plugin);
@@ -94,7 +96,9 @@ public class EngineSource {
         if (!enabled) { return false; }
 
         // Unload Commands
-        command.unregisterCommand();
+        if (command != null) {
+            command.unregisterCommand();
+        }
 
         // Shutdown Services
         syncMode.disableServices();

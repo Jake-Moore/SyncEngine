@@ -45,6 +45,7 @@ public class ProfileListener implements Listener {
     public ProfileListener() {}
 
     public static <X extends SyncProfile> void quit(@NotNull Player player, ProfileCache<X> cache, boolean isEnabled) {
+        cache.getLoggerService().debug("Player " + player.getName() + " quitting, saving profile...");
         if (EngineSource.getSyncMode() == SyncMode.STANDALONE) {
             QuitMethods.standaloneQuit(player, cache, isEnabled);
         } else {
@@ -121,6 +122,8 @@ public class ProfileListener implements Listener {
         // Check that the server is valid
         SyncServer server = serverService.get(networkProfile.getLastSeenServer()).orElse(null);
         if (server == null || !server.isOnline()) { return; }
+
+        serverService.debug("Validating Source Server: " + server.getName() + " for " + networkProfile.getUsername());
 
         // Let the other server know they're swapping
         CompletableFuture<Boolean> future = EngineSource.getSwapService().requestHandshake(

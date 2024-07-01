@@ -7,6 +7,7 @@ import com.kamikazejam.syncengine.base.exception.DuplicateDatabaseException;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,18 @@ import java.util.stream.Collectors;
 public class SyncEngineAPI {
     @Getter
     private static final ConcurrentMap<String, Cache<?, ?>> caches = new ConcurrentHashMap<>();
+    @Getter
     private static final ConcurrentMap<String, String> databases = new ConcurrentHashMap<>(); // Stored lowercase for uniqueness checks
+
+    /**
+     * Get a cache by name
+     *
+     * @param name Name of the cache
+     * @return The Cache
+     */
+    public static @Nullable Cache<?,?> getCache(String name) {
+        return caches.get(convertCacheName(name));
+    }
 
     /**
      * Register a cache w/ a hook

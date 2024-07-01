@@ -201,7 +201,7 @@ public class MongoStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> boolean canCache() {
+    public boolean canCache() {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         // If we have Redis on this instance, check both MongoDB and Redis
         if (redisService != null) {

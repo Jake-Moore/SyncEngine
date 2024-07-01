@@ -58,6 +58,6 @@ public abstract class StorageService extends LoggerService implements Service {
     /**
      * @return If the StorageService is ready to be used for a cache.
      */
-    public abstract <K, X extends Sync<K>> boolean canCache();
+    public abstract boolean canCache();
 
 }

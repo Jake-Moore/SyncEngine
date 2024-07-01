@@ -117,23 +117,23 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
             Optional<X> o = fetch();
             if (o.isPresent()) {
                 return o.get();
-            } else {
-                // Fake the login in order to trigger the logic needed to create a new profile
-                login = true;
-                @Nullable X sync = fetch().orElse(null);
-                login = false;
-
-                // Throw error if still null (can't return null, so throw exception)
-                if (sync == null) {
-                    String msg = "Failed to create new profile for username: " + username + " (UUID: " + uuid.toString() + ")";
-                    cache.getLoggerService().info(msg);
-                    throw new RuntimeException(msg);
-                }
-
-                // Save the new object, and return it
-                sync.save();
-                return sync;
             }
+
+            // Fake the login in order to trigger the logic needed to create a new profile
+            login = true;
+            @Nullable X sync = fetch().orElse(null);
+            login = false;
+
+            // Throw error if still null (can't return null, so throw exception)
+            if (sync == null) {
+                String msg = "Failed to create new profile for username: " + username + " (UUID: " + uuid + ")";
+                cache.getLoggerService().info(msg);
+                throw new RuntimeException(msg);
+            }
+
+            // Save the new object, and return it
+            sync.save();
+            return sync;
         });
     }
 

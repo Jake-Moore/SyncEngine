@@ -87,6 +87,8 @@ public class NetworkSwapService extends LoggerService implements Service {
             reactive.observeChannels()
                     .filter(pm -> pm.getChannel().equals(channelRequest) || pm.getChannel().equals(channelReply))
                     .doOnNext(patternMessage -> {
+                        debug("Received message on channel: " + patternMessage.getChannel() + " - " + patternMessage.getMessage());
+
                         NetworkSwapPacket packet = NetworkSwapPacket.fromJSON(patternMessage.getMessage());
                         if (packet == null) { return; }
                         if (!packet.getTargetServer().equalsIgnoreCase(serverService.getThisServer().getName())) { return; }
