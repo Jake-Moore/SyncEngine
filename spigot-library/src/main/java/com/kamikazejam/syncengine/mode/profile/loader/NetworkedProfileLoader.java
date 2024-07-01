@@ -41,6 +41,7 @@ public class NetworkedProfileLoader {
                         L.cache.cache(L.sync);
                     }
                     L.sync = L.cache.getLocalStore().get(L.uuid).orElseThrow();
+                    L.sync.setCache(L.cache);
                     return Optional.of(L.sync);
                 }
             }

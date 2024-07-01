@@ -77,7 +77,7 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
 
         if (login) {
             StorageService storageService = EngineSource.getStorageService();
-            if (!storageService.canCache(cache)) {
+            if (!storageService.canCache()) {
                 denyJoin = true;
                 joinDenyReason = StringUtil.t(EngineSource.getConfig().getString("profiles.messages.beforeDbConnection")
                         .replace("{cacheName}", cache.getName()));

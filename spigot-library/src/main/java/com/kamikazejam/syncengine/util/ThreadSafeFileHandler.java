@@ -31,15 +31,16 @@ public class ThreadSafeFileHandler {
         ReentrantReadWriteLock.WriteLock lock = getLock(path.toString()).writeLock();
         lock.lock();
         try {
-            // Write to a temp file, so that if the write fails or is interrupted, the original file is not corrupted.
-            Path tempFile = Files.createTempFile("temp-", ".tmp");
-            Files.writeString(tempFile, content, StandardCharsets.UTF_8);
-
             // Atomically create the destination file if required
             if (!path.toFile().exists()) {
                 path.toFile().getParentFile().mkdirs();
                 path.toFile().createNewFile();
             }
+
+            // Write to a temp file, so that if the write fails or is interrupted, the original file is not corrupted.
+            Path tempFile = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".tmp");
+            Files.writeString(tempFile, content, StandardCharsets.UTF_8);
+
             // Atomically move the temp file to the target file (overwriting)
             //  - this method requires the file to exist with a valid directory path
             Files.move(tempFile, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);

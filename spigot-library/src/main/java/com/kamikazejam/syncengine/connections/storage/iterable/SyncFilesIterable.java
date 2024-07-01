@@ -36,7 +36,9 @@ public class SyncFilesIterable<K, X extends Sync<K>> implements Iterable<X> {
                     Path filePath = pathIterator.next();
                     try {
                         String json = FileUtils.readFileToString(filePath.toFile(), StandardCharsets.UTF_8);
-                        return JacksonUtil.fromJson(cache.getSyncClass(), json);
+                        X sync = JacksonUtil.fromJson(cache.getSyncClass(), json);
+                        sync.setCache(cache);
+                        return sync;
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to read file: " + filePath, e);
                     }

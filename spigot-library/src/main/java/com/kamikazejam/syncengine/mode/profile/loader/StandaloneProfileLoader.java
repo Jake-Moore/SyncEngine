@@ -29,6 +29,7 @@ public class StandaloneProfileLoader {
                 }
                 L.sync.setId(L.uuid);
                 L.sync.setLoadingSource("New Profile");
+                L.sync.setCache(L.cache);
                 L.cache.save(L.sync);
                 return Optional.of(L.sync);
             }

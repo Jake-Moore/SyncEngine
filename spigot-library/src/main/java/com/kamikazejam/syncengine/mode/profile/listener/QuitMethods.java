@@ -1,5 +1,6 @@
 package com.kamikazejam.syncengine.mode.profile.listener;
 
+import com.kamikazejam.kamicommon.util.KUtil;
 import com.kamikazejam.syncengine.mode.profile.ProfileCache;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import org.bukkit.entity.Player;
@@ -39,6 +40,7 @@ public class QuitMethods {
         if (o.isEmpty()) {
             // This shouldn't happen
             cache.getLoggerService().debug("Profile null during logout for Sync '" + player.getName() + "': could not set online=false");
+            KUtil.printStackTrace();
             return;
         }
 

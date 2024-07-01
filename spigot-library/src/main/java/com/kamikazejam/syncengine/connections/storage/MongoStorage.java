@@ -201,7 +201,7 @@ public class MongoStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> boolean canCache(Cache<K, X> cache) {
+    public <K, X extends Sync<K>> boolean canCache() {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         // If we have Redis on this instance, check both MongoDB and Redis
         if (redisService != null) {
@@ -266,17 +266,17 @@ public class MongoStorage extends StorageService {
 
     @SuppressWarnings("unchecked")
     public <K, X extends Sync<K>> @NotNull JacksonMongoCollection<X> getJackson(Cache<K, X> cache) {
-        String databaseName = cache.getDatabaseName();
-        if (collMap.containsKey(databaseName)) {
-            return (JacksonMongoCollection<X>) collMap.get(databaseName);
+        String key = cache.getDatabaseName() + "." + cache.getName();
+        if (collMap.containsKey(key)) {
+            return (JacksonMongoCollection<X>) collMap.get(key);
         }
 
         // Create a new JacksonMongoCollection
         JacksonMongoCollection<X> coll = JacksonMongoCollection.builder()
                 .withObjectMapper(getMapper())
-                .build(mongoClient, databaseName, cache.getName(), cache.getSyncClass(), UuidRepresentation.STANDARD);
+                .build(mongoClient, cache.getDatabaseName(), cache.getName(), cache.getSyncClass(), UuidRepresentation.STANDARD);
 
-        collMap.put(databaseName, coll);
+        collMap.put(key, coll);
         return coll;
     }
 

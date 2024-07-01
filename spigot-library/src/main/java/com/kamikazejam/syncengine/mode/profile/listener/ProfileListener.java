@@ -8,6 +8,7 @@ import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.base.exception.CachingError;
 import com.kamikazejam.syncengine.base.mode.SyncMode;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
+import com.kamikazejam.syncengine.connections.storage.StorageService;
 import com.kamikazejam.syncengine.event.profile.NetworkProfileLoginEvent;
 import com.kamikazejam.syncengine.event.profile.NetworkProfileLogoutEvent;
 import com.kamikazejam.syncengine.event.profile.NetworkProfileSwitchServersEvent;
@@ -58,6 +59,12 @@ public class ProfileListener implements Listener {
         final UUID uniqueId = event.getUniqueId();
         final String ip = event.getAddress().getHostAddress();
 
+        StorageService storageService = EngineSource.getStorageService();
+        if (!storageService.canCache()) {
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, ChatColor.RED + "Server is starting, please wait.");
+            return;
+        }
+
         // Trigger a NetworkSwapHandshake in order to let the other server know about the swap
         //  and to validate that the player is on the lastSeenServer (if set in NetworkProfile)
         NetworkProfile networkProfile = EngineSource.getNetworkStore().getOrCreate(uniqueId, username);
@@ -65,7 +72,7 @@ public class ProfileListener implements Listener {
             validateSwap(networkProfile);
         }catch (Throwable t) {
             t.printStackTrace();
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, ChatColor.RED + "A caching error occurred.  Please try again.");
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, ChatColor.RED + "A caching error occurred. Please try again.");
             return;
         }
         // Keep track of when a player FIRST joins a sync group
