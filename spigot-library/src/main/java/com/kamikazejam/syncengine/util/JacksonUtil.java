@@ -47,7 +47,13 @@ public class JacksonUtil {
     }
 
     @SneakyThrows
-    public static @NotNull String toJson(@NotNull Object o) {
+    public static @NotNull String serialize(@NotNull Object o) {
         return getMapper().writeValueAsString(o);
+    }
+
+    @SneakyThrows @Contract("_, !null -> !null")
+    public static <X> @Nullable X deserialize(Class<X> clazz, @Nullable String json) {
+        if (json == null) { return null; }
+        return getMapper().readValue(json, clazz);
     }
 }

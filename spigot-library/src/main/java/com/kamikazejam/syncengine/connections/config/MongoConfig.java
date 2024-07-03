@@ -6,17 +6,17 @@ import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 @Getter
-public class MongoConf {
+public class MongoConfig {
     private final String uri;
 
     // Private - fetch the MongoConf Singleton via static methods
-    private MongoConf(String uri) {
+    private MongoConfig(String uri) {
         this.uri = uri;
     }
 
-    private static @Nullable MongoConf conf = null;
+    private static @Nullable MongoConfig conf = null;
 
-    public static MongoConf get() {
+    public static MongoConfig get() {
         if (conf != null) {
             return conf;
         }
@@ -24,6 +24,6 @@ public class MongoConf {
         // Load Config Values
         KamiConfig config = EngineSource.getConfig();
         String uri = config.getString("connections.MONGODB.uri", null);
-        return conf = new MongoConf(uri);
+        return conf = new MongoConfig(uri);
     }
 }

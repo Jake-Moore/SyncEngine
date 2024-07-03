@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.mode.profile.handshake;
 
 import com.google.common.base.Preconditions;
+import com.kamikazejam.kamicommon.redis.RedisChannel;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.kamicommon.util.data.Pair;
 import com.kamikazejam.syncengine.EngineSource;
@@ -12,8 +13,6 @@ import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.JacksonUtil;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
-import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,18 +27,16 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
     private final Map<UUID, CompletableFuture<@Nullable Pair<String, Long>>> handshakeMap = new HashMap<>();
 
     private final SyncProfileCache<X> cache;
-    private final String channelRequest;
-    private final String channelReply;
+    private final String channelName;
+    protected RedisChannel<ProfileHandshakePacket> channel = null;
 
     private boolean running = false;
-    private RedisPubSubReactiveCommands<String, String> reactive = null;
 
     public ProfileHandshakeService(@NotNull SyncProfileCache<X> cache) {
         Preconditions.checkNotNull(cache, "Cache cannot be null");
         Preconditions.checkNotNull(cache.getName(), "Cache name cannot be null");
         this.cache = cache;
-        this.channelRequest = "sync-profile-handshake-" + cache.getName() + "-request";
-        this.channelReply = "sync-profile-handshake-" + cache.getName() + "-reply";
+        this.channelName = "sync-profile-handshake-" + cache.getName();
     }
 
     @Override
@@ -53,7 +50,7 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
             return running = true;
         }
 
-        boolean sub = subscribe();
+        boolean sub = subscribe(redisService, serverService);
         running = true;
         return sub;
     }
@@ -62,9 +59,6 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
     @SuppressWarnings("all")
     public boolean shutdown() {
         Preconditions.checkState(running, "Profile Handshake Service is not running!");
-        if (reactive != null) {
-            reactive.unsubscribe(channelRequest, channelReply);
-        }
         running = false;
         return true;
     }
@@ -74,38 +68,22 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
         return running;
     }
 
-    private boolean subscribe() {
-        @Nullable RedisService redisService = EngineSource.getRedisService();
-        @Nullable ServerService serverService = EngineSource.getServerService();
-        Preconditions.checkNotNull(redisService, "RedisService cannot be null");
-        Preconditions.checkNotNull(serverService, "ServerService cannot be null");
-
-        try {
-            StatefulRedisPubSubConnection<String, String> connection = redisService.getRedisPubSub();
-            reactive = connection.reactive();
-
-            reactive.subscribe(channelRequest, channelReply).subscribe();
-
-            reactive.observeChannels()
-                    .filter(pm -> pm.getChannel().equals(channelRequest) || pm.getChannel().equals(channelReply))
-                    .doOnNext(patternMessage -> {
-                        ProfileHandshakePacket packet = ProfileHandshakePacket.fromJSON(patternMessage.getMessage());
-                        if (packet != null) {
-                            if (packet.getTargetServer().equalsIgnoreCase(serverService.getThisServer().getName())) {
-                                if (patternMessage.getChannel().equals(channelRequest)) {
-                                    handleRequest(packet);
-                                } else if (patternMessage.getChannel().equals(channelReply)) {
-                                    handleReply(packet);
-                                }
-                            }
-                        }
-                    }).subscribe();
-
-            return true;
-        } catch (Exception ex) {
-            cache.getLoggerService().info(ex, "Error subscribing in Profile Handshake Service for channels: " + channelRequest + ", " + channelReply);
-            return false;
+    private boolean subscribe(@NotNull RedisService redis, @NotNull ServerService server) {
+        if (this.channel == null) {
+            this.channel = redis.getApi().registerChannel(ProfileHandshakePacket.class, this.channelName);
         }
+
+        // Listen for incoming packets
+        channel.subscribe((c, packet) -> {
+            if (!packet.getTargetServer().equals(server.getThisServer().getName())) { return; }
+            // Use the request boolean to differentiate between requests and replies
+            if (packet.isRequest()) {
+                handleRequest(packet);
+            } else {
+                handleReply(packet);
+            }
+        });
+        return true;
     }
 
     private void handleRequest(@NotNull final ProfileHandshakePacket packet) {
@@ -113,7 +91,6 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
         @Nullable ServerService serverService = EngineSource.getServerService();
         Preconditions.checkNotNull(redisService, "RedisService cannot be null");
         Preconditions.checkNotNull(serverService, "ServerService cannot be null");
-
 
         Preconditions.checkNotNull(packet, "ProfileHandshakePacket cannot be null");
         // Another server is being joined by the player (who is assuming-ly on this server)
@@ -145,9 +122,9 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
             // Time to send the packet back as a reply (swap target/sender servers and update the JSON)
             packet.setTargetServer(packet.getSenderServer());
             packet.setSenderServer(serverService.getThisServer().getName());
-            String json = packet.toDocument().toJson();
-            Preconditions.checkNotNull(json, "JSON cannot be null for sendReply in ProfileHandshakeService");
-            redisService.getRedis().async().publish(channelReply, json);
+            packet.setRequest(false); // Is a reply
+
+            channel.publish(packet, false);
             cache.getLoggerService().debug("Sending reply for handshake for UUID " + packet.getUuid() + " [" + packet.getSenderServer() + " -> " + packet.getTargetServer() + "] v" + packet.getVersion("?"));
             return null;
         });
@@ -172,14 +149,13 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
         Preconditions.checkNotNull(serverService, "ServerService cannot be null");
         UUID handshakeId = UUID.randomUUID();
 
-        ProfileHandshakePacket packet = new ProfileHandshakePacket(login, msStart, serverService.getThisServer().getName(), loader.getUuid(), targetServer.getName(), handshakeId, null);
-        String json = packet.toDocument().toJson();
-        Preconditions.checkNotNull(json, "JSON cannot be null for handshake in ProfileHandshakeService");
+        ProfileHandshakePacket packet = new ProfileHandshakePacket(true, login, msStart, serverService.getThisServer().getName(), loader.getUuid(), targetServer.getName(), handshakeId, null);
 
         // Send the handshake REQUEST to the target server
         CompletableFuture<@Nullable Pair<String, Long>> future = new CompletableFuture<>();
         handshakeMap.put(handshakeId, future);
-        redisService.getRedis().async().publish(channelRequest, json);
+
+        channel.publish(packet, false);
         return future;
     }
 }

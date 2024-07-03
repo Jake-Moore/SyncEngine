@@ -1,12 +1,12 @@
 package com.kamikazejam.syncengine.mode.profile.network.profile.store;
 
+import com.kamikazejam.kamicommon.lettuce.core.api.StatefulRedisConnection;
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.JacksonUtil;
-import io.lettuce.core.api.StatefulRedisConnection;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +63,7 @@ public class NetworkProfileRedis extends NetworkProfileStore {
         Preconditions.checkNotNull(keyString, "Key cannot be null");
 
         // Convert networkProfile into a json string
-        String json = JacksonUtil.toJson(networkProfile);
+        String json = JacksonUtil.serialize(networkProfile);
         Preconditions.checkNotNull(json, "JSON cannot be null");
 
         try {
@@ -141,9 +141,9 @@ public class NetworkProfileRedis extends NetworkProfileStore {
     //                     Helper Methods                    //
     // ----------------------------------------------------- //
     public @NotNull StatefulRedisConnection<String, String> getRedis() {
-        RedisService redisService = EngineSource.getRedisService();
-        Preconditions.checkNotNull(redisService, "RedisService cannot be null");
-        return redisService.getRedis();
+        RedisService redis = EngineSource.getRedisService();
+        Preconditions.checkNotNull(redis, "RedisService cannot be null");
+        return redis.getApi().getConnection();
     }
     @SneakyThrows
     private @NotNull NetworkProfile createNetworkProfile(@NotNull String json) {

@@ -1,7 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 @Suppress("PropertyName")
-val VERSION = "0.4.2"
+val VERSION = "0.4.3"
 
 plugins {
     id("java")
@@ -14,7 +14,7 @@ plugins {
 tasks.jar.get().enabled = false
 
 // Export KamiCommonVer for use in all subprojects
-val kamiCommonVer = "3.0.4.1"
+val kamiCommonVer = "3.1.0.6"
 ext {
     set("kamiCommonVer", kamiCommonVer)
 }

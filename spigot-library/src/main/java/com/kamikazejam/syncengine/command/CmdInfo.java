@@ -29,7 +29,7 @@ public class CmdInfo extends KamiCommand {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService != null) {
             sender.sendMessage(StringUtil.t("&7Redis Connection:"));
-            String c = (redisService.isRedisConnected()) ? "&atrue" : "&cfalse";
+            String c = (redisService.getApi().isConnected()) ? "&atrue" : "&cfalse";
             sender.sendMessage(StringUtil.t("  &6Connected: " + c));
         }
     }

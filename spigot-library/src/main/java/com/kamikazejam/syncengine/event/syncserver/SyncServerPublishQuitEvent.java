@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.event.group.event;
+package com.kamikazejam.syncengine.event.syncserver;
 
 import lombok.Getter;
 import org.bukkit.event.Event;
@@ -6,12 +6,12 @@ import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 @Getter
-public class SyncServerPublishPingEvent extends Event {
+public class SyncServerPublishQuitEvent extends Event {
     private final String syncID;
     private final String syncGroup;
 
-    public SyncServerPublishPingEvent(String syncID, String syncGroup) {
-        super(true);
+    public SyncServerPublishQuitEvent(String syncID, String syncGroup) {
+        super(false);
         this.syncID = syncID;
         this.syncGroup = syncGroup;
     }

@@ -5,7 +5,7 @@ import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
-import com.kamikazejam.syncengine.connections.config.MongoConf;
+import com.kamikazejam.syncengine.connections.config.MongoConfig;
 import com.kamikazejam.syncengine.connections.monitor.MongoMonitor;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
@@ -205,7 +205,7 @@ public class MongoStorage extends StorageService {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         // If we have Redis on this instance, check both MongoDB and Redis
         if (redisService != null) {
-            return mongoConnected && redisService.isRedisConnected();
+            return mongoConnected && redisService.getApi().isConnected();
         }
         // Otherwise just check that MongoDB is connected
         return mongoConnected;
@@ -224,7 +224,7 @@ public class MongoStorage extends StorageService {
                     .applyToServerSettings(builder -> builder.addServerMonitorListener(new MongoMonitor(this)));
 
             // Using connection URI
-            ConnectionString connectionString = new ConnectionString(MongoConf.get().getUri());
+            ConnectionString connectionString = new ConnectionString(MongoConfig.get().getUri());
             settingsBuilder.applyConnectionString(connectionString);
             this.mongoClient = MongoClients.create(settingsBuilder.build());
 

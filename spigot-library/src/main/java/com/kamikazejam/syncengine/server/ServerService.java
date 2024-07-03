@@ -1,13 +1,12 @@
 package com.kamikazejam.syncengine.server;
 
 import com.google.common.base.Preconditions;
+import com.kamikazejam.kamicommon.redis.RedisMultiChannel;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
-import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,7 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-@SuppressWarnings({"UnusedReturnValue", "ReactiveStreamsUnusedPublisher", "unused"})
+@SuppressWarnings({"UnusedReturnValue", "unused"})
 @Getter
 public class ServerService extends LoggerService implements Runnable, Service {
 
@@ -37,9 +36,10 @@ public class ServerService extends LoggerService implements Runnable, Service {
 
     private ServerPublisher publisher = null;
     private BukkitTask pingTask = null;
-    private RedisPubSubReactiveCommands<String, String> reactive = null;
     @Getter
     private boolean running = false;
+    @Getter
+    private RedisMultiChannel<SyncServerPacket> channel = null;
 
     public ServerService() {
         this.plugin = EngineSource.get();
@@ -69,40 +69,27 @@ public class ServerService extends LoggerService implements Runnable, Service {
     }
 
     // Require a RedisService to call this
-    private boolean subscribe(@NotNull RedisService redisService) {
-        try {
-            StatefulRedisPubSubConnection<String, String> connection = redisService.getRedisPubSub();
-            reactive = connection.reactive();
-
-            reactive.subscribe(ServerEvent.getEvents().toArray(new String[0])).subscribe();
-
-            reactive.observeChannels()
-                    .filter(pm -> !pm.getMessage().equalsIgnoreCase(this.getThisServer().getName()))
-                    .filter(pm -> ServerEvent.getEvents().contains(pm.getChannel()))
-                    .doOnNext(patternMessage -> {
-                        ServerEvent event = ServerEvent.fromChannel(patternMessage.getChannel());
-                        SyncServerPacket packet = SyncServerPacket.fromJSON(patternMessage.getMessage());
-                        if (event != null && packet != null) {
-                            // Check that this redis message is for us
-                            if (!packet.getSyncGroup().equalsIgnoreCase(EngineSource.getSyncServerGroup())) {
-                                return;
-                            }
-
-                            if (event.equals(ServerEvent.JOIN)) {
-                                handleJoin(packet.getDbName(), packet.getSyncID(), packet.getSyncGroup());
-                            } else if (event.equals(ServerEvent.QUIT)) {
-                                handleQuit(packet.getDbName(), packet.getSyncID());
-                            } else if (event.equals(ServerEvent.PING)) {
-                                handlePing(packet.getDbName(), packet.getSyncID(), packet.getSyncGroup());
-                            }
-                        }
-                    }).subscribe();
-
-            return true;
-        } catch (Exception ex) {
-            this.info(ex, "Error subscribing");
-            return false;
+    private boolean subscribe(@NotNull RedisService redis) {
+        if (this.channel == null) {
+            this.channel = redis.getApi().registerMultiChannel(SyncServerPacket.class, ServerEvent.getChannels().toArray(new String[0]));
         }
+
+        channel.subscribe((c, packet) -> {
+            ServerEvent event = ServerEvent.fromChannel(c);
+            if (event == null) { return; }
+
+            // Check that this redis message is for us
+            if (!packet.getSyncGroup().equalsIgnoreCase(EngineSource.getSyncServerGroup())) { return; }
+
+            if (event.equals(ServerEvent.JOIN)) {
+                handleJoin(packet.getDbName(), packet.getSyncID(), packet.getSyncGroup());
+            } else if (event.equals(ServerEvent.QUIT)) {
+                handleQuit(packet.getDbName(), packet.getSyncID());
+            } else if (event.equals(ServerEvent.PING)) {
+                handlePing(packet.getDbName(), packet.getSyncID(), packet.getSyncGroup());
+            }
+        });
+        return true;
     }
 
     @NotNull
@@ -206,9 +193,6 @@ public class ServerService extends LoggerService implements Runnable, Service {
         try {
             if (this.pingTask != null) {
                 this.pingTask.cancel();
-            }
-            if (reactive != null) {
-                reactive.unsubscribe(ServerEvent.getEvents().toArray(new String[0]));
             }
 
             SyncEngineAPI.getCaches().forEach((name, cache) -> this.publisher.publishQuit(cache.getDatabaseName(), true));

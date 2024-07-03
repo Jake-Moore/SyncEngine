@@ -59,7 +59,7 @@ public class VersionMismatchHandler {
                 Object currentValue = field.get(sync);
 
                 // Use Jackson since .equals might not work for all types
-                if (!Objects.equals(JacksonUtil.toJson(cachedValue), JacksonUtil.toJson(currentValue))) {
+                if (!Objects.equals(JacksonUtil.serialize(cachedValue), JacksonUtil.serialize(currentValue))) {
                     // Update the database object with the current value
                     field.set(database, currentValue);
                     info("\tUpdated field " + field.getName() + " from " + cachedValue + " to " + currentValue);

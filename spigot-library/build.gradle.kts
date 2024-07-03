@@ -9,10 +9,10 @@ val kamiCommonVer = (project.property("kamiCommonVer") as String)
 dependencies {
     // unique dependencies for this module
     compileOnly("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
+    compileOnly("com.kamikazejam.kamicommon:generic-jar:$kamiCommonVer")
 
     // Internal Libraries
     shadow("org.mongojack:mongojack:5.0.0")
-    shadow("io.lettuce:lettuce-core:6.3.2.RELEASE")
 }
 
 tasks {
@@ -29,10 +29,7 @@ tasks {
 
         // Other relocations (like transitive dependencies)
         relocate("org.bson", "shaded.com.kamikazejam.syncengine.bson")
-        relocate("io.netty", "shaded.com.kamikazejam.syncengine.netty")
         relocate("org.slf4j", "shaded.com.kamikazejam.syncengine.slf4j")
-        relocate("reactor", "shaded.com.kamikazejam.syncengine.reactor")
-        relocate("org.reactivestreams", "shaded.com.kamikazejam.syncengine.reactivestreams")
     }
 
     processResources {

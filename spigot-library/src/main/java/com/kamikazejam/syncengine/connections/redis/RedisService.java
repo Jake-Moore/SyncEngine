@@ -1,35 +1,24 @@
 package com.kamikazejam.syncengine.connections.redis;
 
+import com.kamikazejam.kamicommon.redis.RedisAPI;
+import com.kamikazejam.kamicommon.redis.RedisConnector;
+import com.kamikazejam.kamicommon.util.LoggerService;
+import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Service;
-import com.kamikazejam.syncengine.base.error.LoggerService;
-import com.kamikazejam.syncengine.connections.config.RedisConf;
-import com.kamikazejam.syncengine.connections.monitor.RedisMonitor;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
+import com.kamikazejam.syncengine.connections.config.RedisConfig;
 import lombok.Getter;
-import lombok.Setter;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+@SuppressWarnings("DuplicatedCode")
 @Getter
 public class RedisService extends LoggerService implements Service {
     private boolean running = false;
-    @Setter
-    private boolean redisInitConnect = false;
-    @Setter
-    private boolean redisConnected = false;
-    @Setter
-    private volatile long lastRedisConnectionAttempt = 0;
-
-    // Redis
-    @Getter
-    private RedisClient redisClient = null;
-    @Getter
-    private StatefulRedisConnection<String, String> redis = null;
-    @Getter
-    private StatefulRedisPubSubConnection<String, String> redisPubSub = null;
-    private RedisMonitor redisMonitor = null;
+    private RedisAPI api;
 
     public RedisService() {
     }
@@ -39,17 +28,9 @@ public class RedisService extends LoggerService implements Service {
     // ------------------------------------------------- //
     @Override
     public boolean start() {
-        this.debug("Connecting to Redis");
-
-        boolean redis = this.connectRedis();
+        // Create our RedisAPI instance
+        this.api = RedisConnector.getAPI(RedisConfig.get(), this);
         this.running = true;
-
-        if (!redis) {
-            this.error("Failed to start RedisService, connection failed.");
-            return false;
-        }
-
-        this.debug("Connected to Redis");
         return true;
     }
 
@@ -60,73 +41,18 @@ public class RedisService extends LoggerService implements Service {
             this.warn("RedisService.shutdown() called while service is not running!");
             return true;
         }
-
-        // Disconnect from Redis
-        boolean redis = this.disconnectRedis();
+        // Shutdown the RedisAPI instance
+        if (this.api != null) {
+            this.api.shutdown();
+        }
         this.running = false;
-
-        if (!redis) {
-            this.error("Failed to shutdown RedisService, disconnect failed.");
-            return false;
-        }
-
-        this.debug("Disconnected from Redis");
         return true;
     }
 
 
-    // ------------------------------------------------- //
-    //                 Redis Connection                 //
-    // ------------------------------------------------- //
-    public boolean connectRedis() {
-        try {
-            this.setLastRedisConnectionAttempt(System.currentTimeMillis());
-
-            // Try connection
-            if (redisClient == null) {
-                redisClient = RedisClient.create(RedisConf.get().getRedisURI());
-            }
-            if (redis == null) {
-                redis = redisClient.connect();
-            }
-            if (redisPubSub == null) {
-                redisPubSub = redisClient.connectPubSub();
-            }
-
-            return true;
-        } catch (Exception ex) {
-            this.info(ex, "Failed Redis connection attempt");
-            return false;
-        } finally {
-            if (this.redisMonitor == null) {
-                this.redisMonitor = new RedisMonitor(this);
-            }
-            if (!this.redisMonitor.isRunning()) {
-                // Always true, no need to check
-                this.redisMonitor.start();
-            }
-        }
-    }
-
-    private boolean disconnectRedis() {
-        if (this.redisMonitor != null) {
-            this.redisMonitor.shutdown();
-        }
-        if (this.redis != null && this.redis.isOpen()) {
-            this.redis.close();
-        }
-        this.redis = null;
-
-        if (this.redisClient != null) {
-            this.redisClient.shutdown();
-            this.redisClient = null;
-        }
-        return true;
-    }
-
 
     // ------------------------------------------------- //
-    //                   LoggerService                   //
+    //                 LoggerService (KC)                //
     // ------------------------------------------------- //
     @Override
     public boolean isDebug() {
@@ -134,12 +60,26 @@ public class RedisService extends LoggerService implements Service {
     }
 
     @Override
-    public Plugin getPlugin() {
+    public String getLoggerName() {
+        return "RedisService";
+    }
+
+    public JavaPlugin getPlugin() {
         return EngineSource.get();
     }
 
     @Override
-    public String getLoggerName() {
-        return "RedisService";
+    public void logToConsole(String a, Level level) {
+        // Add the logger name to the start of the msg
+        String content = "[" + getLoggerName() + "] " + a;
+        // Add the plugin name to the VERY start, so it matches existing logging format
+        String plPrefix = "[" + getPlugin().getName() + "] ";
+        if (level == Level.INFO) {
+            Bukkit.getConsoleSender().sendMessage(StringUtil.t(plPrefix + content));
+        } else if (level == Level.FINE) {
+            Bukkit.getConsoleSender().sendMessage(StringUtil.t("&7[DEBUG] " + plPrefix + content));
+        } else {
+            Logger.getLogger("Minecraft").log(level, StringUtil.t(plPrefix + content));
+        }
     }
 }

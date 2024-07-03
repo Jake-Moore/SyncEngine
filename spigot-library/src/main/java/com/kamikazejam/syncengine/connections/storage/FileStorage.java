@@ -87,7 +87,7 @@ public class FileStorage extends StorageService {
             if (json == null || json.isEmpty()) {
                 return Optional.empty();
             }
-            return Optional.of(JacksonUtil.fromJson(cache.getSyncClass(), json));
+            return Optional.of(JacksonUtil.deserialize(cache.getSyncClass(), json));
         } catch (Throwable t) {
             cache.getLoggerService().severe(t, "Failed to read file: " + targetFile.getAbsolutePath());
             return Optional.empty();

@@ -14,16 +14,16 @@ public enum ServerEvent {
     UPDATE("sync-server-update-name"),
     ;
 
-    private final String event;
+    private final String channel;
     public static final ServerEvent[] CACHE = values();
 
-    ServerEvent(String event) {
-        this.event = event;
+    ServerEvent(String channel) {
+        this.channel = channel;
     }
 
     public static ServerEvent fromChannel(String msg) {
         for (ServerEvent e : values()) {
-            if (e.event.equalsIgnoreCase(msg)) {
+            if (e.channel.equalsIgnoreCase(msg)) {
                 return e;
             }
         }
@@ -32,9 +32,9 @@ public enum ServerEvent {
 
     private static List<String> eventsCache = null;
 
-    public static List<String> getEvents() {
+    public static List<String> getChannels() {
         if (eventsCache == null) {
-            eventsCache = Arrays.stream(CACHE).map(ServerEvent::getEvent).toList();
+            eventsCache = Arrays.stream(CACHE).map(ServerEvent::getChannel).toList();
         }
         return eventsCache;
     }

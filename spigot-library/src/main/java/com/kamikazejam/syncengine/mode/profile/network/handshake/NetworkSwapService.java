@@ -1,6 +1,8 @@
 package com.kamikazejam.syncengine.mode.profile.network.handshake;
 
 import com.google.common.base.Preconditions;
+import com.kamikazejam.kamicommon.redis.RedisChannel;
+import com.kamikazejam.kamicommon.util.JacksonUtil;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
@@ -11,8 +13,6 @@ import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
-import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
-import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -33,11 +33,10 @@ import java.util.concurrent.TimeUnit;
 public class NetworkSwapService extends LoggerService implements Service {
 
     private final Map<UUID, CompletableFuture<Boolean>> handshakeMap = new HashMap<>();
-    private final String channelRequest = "sync-network_profile-handshake-request";
-    private final String channelReply = "sync-network_profile-handshake-reply";
+    private final String channelName = "sync-network_profile-handshake";
 
     private boolean running = false;
-    private RedisPubSubReactiveCommands<String, String> reactive = null;
+    protected RedisChannel<NetworkSwapPacket> channel = null;
 
     public NetworkSwapService() {}
 
@@ -45,14 +44,14 @@ public class NetworkSwapService extends LoggerService implements Service {
     public boolean start() {
         Preconditions.checkState(!running, "NetworkSwapService is already running!");
 
-        RedisService redisService = EngineSource.getRedisService();
-        ServerService serverService = EngineSource.getServerService();
+        @Nullable RedisService redisService = EngineSource.getRedisService();
+        @Nullable ServerService serverService = EngineSource.getServerService();
         if (redisService == null || serverService == null) {
             // Do nothing without a RedisService and ServerService
             return true;
         }
 
-        boolean sub = subscribe();
+        boolean sub = subscribe(redisService, serverService);
         running = true;
         return sub;
     }
@@ -61,9 +60,6 @@ public class NetworkSwapService extends LoggerService implements Service {
     @SuppressWarnings("all")
     public boolean shutdown() {
         Preconditions.checkState(running, "NetworkSwapService is not running!");
-        if (reactive != null) {
-            reactive.unsubscribe(channelRequest, channelReply);
-        }
         running = false;
         return true;
     }
@@ -73,39 +69,23 @@ public class NetworkSwapService extends LoggerService implements Service {
         return running;
     }
 
-    private boolean subscribe() {
-        RedisService redisService = EngineSource.getRedisService();
-        ServerService serverService = EngineSource.getServerService();
-        Preconditions.checkNotNull(redisService, "RedisService cannot be null");
-        Preconditions.checkNotNull(serverService, "ServerService cannot be null");
-
-        try {
-            StatefulRedisPubSubConnection<String, String> connection = redisService.getRedisPubSub();
-            reactive = connection.reactive();
-            reactive.subscribe(channelRequest, channelReply).subscribe();
-
-            reactive.observeChannels()
-                    .filter(pm -> pm.getChannel().equals(channelRequest) || pm.getChannel().equals(channelReply))
-                    .doOnNext(patternMessage -> {
-                        debug("Received message on channel: " + patternMessage.getChannel() + " - " + patternMessage.getMessage());
-
-                        NetworkSwapPacket packet = NetworkSwapPacket.fromJSON(patternMessage.getMessage());
-                        if (packet == null) { return; }
-                        if (!packet.getTargetServer().equalsIgnoreCase(serverService.getThisServer().getName())) { return; }
-
-                        if (patternMessage.getChannel().equals(channelRequest)) {
-                            handleRequest(packet);
-                        } else if (patternMessage.getChannel().equals(channelReply)) {
-                            handleReply(packet);
-                        }
-
-                    }).subscribe();
-
-            return true;
-        } catch (Exception ex) {
-            info(ex, "Error subscribing in NetworkSwapService for channels: " + channelRequest + ", " + channelReply);
-            return false;
+    private boolean subscribe(@NotNull RedisService redis, @NotNull ServerService server) {
+        if (this.channel == null) {
+            this.channel = redis.getApi().registerChannel(NetworkSwapPacket.class, this.channelName);
         }
+
+        // Listen for messages
+        channel.subscribe((c, packet) -> {
+            debug("Received message on channel: " + this.channelName + " - " + JacksonUtil.serialize(packet));
+            if (!packet.getTargetServer().equalsIgnoreCase(server.getThisServer().getName())) { return; }
+
+            if (packet.isRequest()) {
+                handleRequest(packet);
+            } else {
+                handleReply(packet);
+            }
+        });
+        return true;
     }
 
     // Handle the REQUEST for a handshake (from another server)
@@ -134,10 +114,10 @@ public class NetworkSwapService extends LoggerService implements Service {
         // Swap the target/sender servers
         packet.setTargetServer(packet.getSenderServer());
         packet.setSenderServer(serverService.getThisServer().getName());
+        packet.setRequest(false); // Is a reply
 
         // Send the reply
-        String json = Preconditions.checkNotNull(packet.toDocument().toJson(), "JSON cannot be null for handshake in ProfileHandshakeService (in handleRequest)");
-        redisService.getRedis().async().publish(channelReply, json);
+        channel.publishAsync(packet);
     }
 
     private void handleReply(@NotNull NetworkSwapPacket packet) {
@@ -161,15 +141,14 @@ public class NetworkSwapService extends LoggerService implements Service {
         Preconditions.checkNotNull(redisService, "RedisService cannot be null");
 
         UUID handshakeId = UUID.randomUUID();
-        NetworkSwapPacket handshake = new NetworkSwapPacket(System.nanoTime(), serverService.getThisServer().getName(), targetServer.getName(), np.getUUID(), np.getUsername(), handshakeId);
-        String json = handshake.toDocument().toJson();
-        Preconditions.checkNotNull(json, "JSON cannot be null for handshake in ProfileHandshakeService");
+        NetworkSwapPacket packet = new NetworkSwapPacket(true, System.nanoTime(), serverService.getThisServer().getName(), targetServer.getName(), np.getUUID(), np.getUsername(), handshakeId);
 
         // Send the handshake REQUEST to the target server
         CompletableFuture<Boolean> future = new CompletableFuture<Boolean>()
                 .orTimeout(5, TimeUnit.SECONDS);
         handshakeMap.put(handshakeId, future);
-        redisService.getRedis().async().publish(channelRequest, json);
+
+        channel.publishAsync(packet);
         return future;
     }
 

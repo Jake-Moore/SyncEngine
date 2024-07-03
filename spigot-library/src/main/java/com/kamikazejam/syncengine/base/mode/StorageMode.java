@@ -18,11 +18,7 @@ public enum StorageMode {
 
     public void enableServices() {
         // Enable Storage Service
-        if (this == FILE) {
-            getFileStorage();
-        } else if (this == MONGODB) {
-            getMongoStorage();
-        }
+        this.getStorageService();
     }
 
     public @NotNull StorageService getStorageService() {

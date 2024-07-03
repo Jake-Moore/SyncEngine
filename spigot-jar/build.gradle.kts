@@ -15,6 +15,7 @@ dependencies {
     // Include KamiCommon utils in the spigot jar (shaded/relocated)
     //  So we don't need to depend on the KamiCommon plugin
     shadow("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
+    shadow("com.kamikazejam.kamicommon:generic-jar:$kamiCommonVer")
 }
 
 tasks {
@@ -51,6 +52,12 @@ tasks {
         configurations = listOf(project.configurations.shadow.get())
 
         relocate("com.kamikazejam.kamicommon", "shaded.com.kamikazejam.syncengine.kc")
+        relocate("com.fasterxml.jackson", "shaded.com.kamikazejam.syncengine.jackson")
+        // Internal Relocations
+        relocate("reactor", "shaded.com.kamikazejam.syncengine.reactor")
+        relocate("org.reactivestreams", "shaded.com.kamikazejam.syncengine.reactivestreams")
+        relocate("io.netty", "shaded.com.kamikazejam.syncengine.netty")
+        relocate("io.netty", "shaded.com.kamikazejam.syncengine.netty")
     }
 }
 
@@ -88,3 +95,10 @@ publishing {
         }
     }
 }
+
+tasks.register<Copy>("unpackShadow") {
+    dependsOn(tasks.shadowJar)
+    from(zipTree(layout.buildDirectory.dir("libs").map { it.file(tasks.shadowJar.get().archiveFileName) }))
+    into(layout.buildDirectory.dir("unpacked-shadow"))
+}
+tasks.getByName("build").finalizedBy(tasks.getByName("unpackShadow"))

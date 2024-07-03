@@ -23,7 +23,7 @@ public class CmdDatabases extends KamiCommand {
         sender.sendMessage(StringUtil.t("&7Storage Service: " + ((store.canCache()) ? "&aConnected" : "&cDisconnected")));
         @Nullable RedisService redis = EngineSource.getRedisService();
         if (redis != null) {
-            sender.sendMessage(StringUtil.t("&7Redis: " + (redis.isRedisConnected() ? "&aConnected" : "&cDisconnected")));
+            sender.sendMessage(StringUtil.t("&7Redis: " + (redis.getApi().isConnected() ? "&aConnected" : "&cDisconnected")));
         }
         sender.sendMessage(StringUtil.t("&7Databases:"));
         SyncEngineAPI.getDatabases().values().forEach((n) -> sender.sendMessage(StringUtil.t("&7 - " + n)));

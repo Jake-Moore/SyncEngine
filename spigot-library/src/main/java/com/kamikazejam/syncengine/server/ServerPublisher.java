@@ -3,20 +3,18 @@ package com.kamikazejam.syncengine.server;
 import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
-import com.kamikazejam.syncengine.event.group.event.SyncServerPublishJoinEvent;
-import com.kamikazejam.syncengine.event.group.event.SyncServerPublishPingEvent;
-import com.kamikazejam.syncengine.event.group.event.SyncServerPublishQuitEvent;
+import com.kamikazejam.syncengine.event.syncserver.SyncServerPublishJoinEvent;
+import com.kamikazejam.syncengine.event.syncserver.SyncServerPublishPingEvent;
+import com.kamikazejam.syncengine.event.syncserver.SyncServerPublishQuitEvent;
 import org.bukkit.Bukkit;
-import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ServerPublisher {
 
-    private final ServerService serverService;
-
-    public ServerPublisher(ServerService serverService) {
-        this.serverService = serverService;
+    private final ServerService server;
+    public ServerPublisher(ServerService server) {
+        this.server = server;
     }
 
     public void publishPing(@NotNull String dbName) {
@@ -28,11 +26,11 @@ public class ServerPublisher {
 
         Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
             try {
-                String syncID = serverService.getThisServer().getName();
-                String syncGroup = serverService.getThisServer().getGroup();
+                String syncID = server.getThisServer().getName();
+                String syncGroup = server.getThisServer().getGroup();
 
-                String json = SyncServerPacket.of(dbName, syncID, syncGroup).toDocument().toJson();
-                redisService.getRedis().async().publish(ServerEvent.PING.getEvent(), json);
+                SyncServerPacket packet = SyncServerPacket.of(dbName, syncID, syncGroup);
+                server.getChannel().publishAsync(ServerEvent.PING.getChannel(), packet);
 
                 // Can be Async
                 Bukkit.getPluginManager().callEvent(new SyncServerPublishPingEvent(syncID, syncGroup));
@@ -50,22 +48,20 @@ public class ServerPublisher {
             return;
         }
 
-        Preconditions.checkNotNull(serverService, "Server service");
-        Preconditions.checkNotNull(redisService.getRedis(), "Redis");
-        Preconditions.checkNotNull(redisService.getRedis().async(), "Redis async");
-        Preconditions.checkNotNull(ServerEvent.JOIN.getEvent(), "Join event");
-        Preconditions.checkNotNull(serverService.getThisServer(), "thisServer");
-        Preconditions.checkNotNull(serverService.getThisServer().getName(), "thisServer#name");
+        Preconditions.checkNotNull(server, "Server service");
+        Preconditions.checkNotNull(server.getThisServer(), "thisServer");
+        Preconditions.checkNotNull(server.getThisServer().getName(), "thisServer#name");
+
         Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
             try {
-                String syncID = serverService.getThisServer().getName();
-                String syncGroup = serverService.getThisServer().getGroup();
+                String syncID = server.getThisServer().getName();
+                String syncGroup = server.getThisServer().getGroup();
 
-                String json = SyncServerPacket.of(dbName, syncID, syncGroup).toDocument().toJson();
-                redisService.getRedis().async().publish(ServerEvent.JOIN.getEvent(), json);
+                SyncServerPacket packet = SyncServerPacket.of(dbName, syncID, syncGroup);
+                server.getChannel().publishAsync(ServerEvent.JOIN.getChannel(), packet);
 
-                Event e = new SyncServerPublishJoinEvent(syncID, syncGroup);
-                Bukkit.getPluginManager().callEvent(e);
+                // Can be Async
+                Bukkit.getPluginManager().callEvent(new SyncServerPublishJoinEvent(syncID, syncGroup));
 
             } catch (Exception ex) {
                 redisService.info(ex, "ServerService ServerPublisher: Error publishing JOIN event");
@@ -75,21 +71,15 @@ public class ServerPublisher {
 
     // Sync Method
     public void publishQuit(@NotNull String dbName, boolean callIsSync) {
-        @Nullable RedisService redisService = EngineSource.getRedisService();
-        if (redisService == null) {
-            // Do nothing, we aren't running NETWORKED
-            return;
-        }
-
-        EngineSource.info("Publishing QUIT event for server " + serverService.getThisServer().getName());
+        EngineSource.info("Publishing QUIT event for server " + server.getThisServer().getName());
 
         try {
             // Run sync to ensure publish completes before shutdown
-            String syncID = serverService.getThisServer().getName();
-            String syncGroup = serverService.getThisServer().getGroup();
+            String syncID = server.getThisServer().getName();
+            String syncGroup = server.getThisServer().getGroup();
 
-            String json = SyncServerPacket.of(dbName, syncID, syncGroup).toDocument().toJson();
-            redisService.getRedis().sync().publish(ServerEvent.QUIT.getEvent(), json);
+            SyncServerPacket packet = SyncServerPacket.of(dbName, syncID, syncGroup);
+            server.getChannel().publishSync(ServerEvent.QUIT.getChannel(), packet);
 
             SyncServerPublishQuitEvent event = new SyncServerPublishQuitEvent(syncID, syncGroup);
             if (callIsSync) {
@@ -99,7 +89,7 @@ public class ServerPublisher {
             }
 
         } catch (Exception ex) {
-            redisService.info(ex, "ServerService ServerPublisher: Error publishing QUIT event");
+            server.info(ex, "ServerService ServerPublisher: Error publishing QUIT event");
         }
     }
 }

@@ -65,7 +65,7 @@ public class NetworkedProfileLoader {
                     @Nullable Pair<String, Long> data = future.get(Settings.HANDSHAKE_TIMEOUT_SEC + 3L, TimeUnit.SECONDS);
                     @Nullable String syncJson = (data == null) ? null : data.getA();
 
-                    @Nullable X temp = JacksonUtil.fromJson(L.cache.getSyncClass(), syncJson);
+                    @Nullable X temp = JacksonUtil.deserialize(L.cache.getSyncClass(), syncJson);
                     if (temp != null) {
                         if (L.sync == null) {
                             // If there is no sync, use the one we received from the handshake
