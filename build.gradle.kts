@@ -1,7 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 @Suppress("PropertyName")
-val VERSION = "0.4.3"
+val VERSION = "0.4.4"
 
 plugins {
     id("java")

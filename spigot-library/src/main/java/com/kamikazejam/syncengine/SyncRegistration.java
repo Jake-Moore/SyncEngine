@@ -35,7 +35,9 @@ public class SyncRegistration {
     public void registerCache(Class<? extends SyncCache<?,?>> clazz) {
         // Find a constructor that takes a SyncRegistration
         try {
-            Constructor<? extends SyncCache<?,?>> constructor = clazz.getConstructor(SyncRegistration.class);
+            // Find the constructor (regardless of visibility)
+            Constructor<? extends SyncCache<?,?>> constructor = clazz.getDeclaredConstructor(SyncRegistration.class);
+            constructor.setAccessible(true);
             SyncCache<?,?> cache = constructor.newInstance(this);
             this.caches.add(cache);
             cache.getLoggerService().info("Cache Registered.");
