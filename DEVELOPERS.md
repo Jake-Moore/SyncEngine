@@ -40,18 +40,20 @@ Next, add the dependency to your project.
   <groupId>com.kamikazejam</groupId>
   <artifactId>SyncEngine</artifactId>
   <version>{VERSION}</version>
-  <scope>compile</scope> <!-- for shading -->
+  <scope>provided</scope> <!-- OR `compile` with the shade plugin -->
 </dependency>
 ```
 
 #### Gradle Dependency (groovy) [build.gradle]
 ```groovy
-implementation "com.kamikazejam:SyncEngine:{VERSION}"
+// or shadow/implementation for shading
+compileOnly "com.kamikazejam:SyncEngine:{VERSION}"
 ```
 
 #### Gradle Dependency (kotlin) [build.gradle.kts]
 ```kotlin
-implementation("com.kamikazejam:SyncEngine:{VERSION}")
+// or shadow/implementation for shading
+compileOnly("com.kamikazejam:SyncEngine:{VERSION}")
 ```
 
 
