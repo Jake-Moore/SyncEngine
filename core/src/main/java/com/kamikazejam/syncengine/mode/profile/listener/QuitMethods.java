@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.mode.profile.listener;
 
 import com.kamikazejam.kamicommon.util.KUtil;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.mode.profile.ProfileCache;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import org.bukkit.entity.Player;
@@ -23,7 +24,7 @@ public class QuitMethods {
             profile.uninitializePlayer();
 
             // Save the profile
-            if (isEnabled) {
+            if (isEnabled && EngineSource.get().isEnabled()) {
                 cache.save(profile);
             } else {
                 cache.saveSynchronously(profile);
@@ -66,7 +67,7 @@ public class QuitMethods {
                 cache.getLoggerService().debug("Saving player " + player.getName() + " on logout (not switching servers)");
             };
 
-            if (isEnabled) {
+            if (isEnabled && EngineSource.get().isEnabled()) {
                 cache.runAsync(r);
             } else {
                 r.run();

@@ -78,10 +78,6 @@ public enum SyncMode {
     }
 
     public void disableServices() {
-        if (redisService != null) {
-            redisService.shutdown();
-            redisService = null;
-        }
         if (serverService != null) {
             serverService.shutdown();
             serverService = null;
@@ -89,6 +85,11 @@ public enum SyncMode {
         if (networkStore != null) {
             networkStore.shutdown();
             networkStore = null;
+        }
+        // Shutdown redis last (after final messages are sent)
+        if (redisService != null) {
+            redisService.shutdown();
+            redisService = null;
         }
     }
 }
