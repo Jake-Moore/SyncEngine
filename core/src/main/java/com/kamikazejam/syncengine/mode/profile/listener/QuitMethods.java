@@ -13,7 +13,7 @@ public class QuitMethods {
     /**
      * Should only ever be called by {@link ProfileListener#quit(Player, ProfileCache, boolean)}
      */
-    protected static <X extends SyncProfile> void standaloneQuit(@NotNull Player player, ProfileCache<X> cache, boolean isEnabled) {
+    protected static <X extends SyncProfile> void standaloneQuit(@NotNull Player player, ProfileCache<X> cache, boolean saveAsync) {
         // save on quit in standalone mode
         Optional<X> o = cache.getFromCache(player.getUniqueId());
         if (o.isPresent()) {
@@ -24,7 +24,7 @@ public class QuitMethods {
             profile.uninitializePlayer();
 
             // Save the profile
-            if (isEnabled && EngineSource.get().isEnabled()) {
+            if (saveAsync && EngineSource.get().isEnabled()) {
                 cache.save(profile);
             } else {
                 cache.saveSynchronously(profile);
@@ -36,7 +36,7 @@ public class QuitMethods {
     /**
      * Should only ever be called by {@link ProfileListener#quit(Player, ProfileCache, boolean)}
      */
-    protected static <X extends SyncProfile> void networkedQuit(@NotNull Player player, ProfileCache<X> cache, boolean isEnabled) {
+    protected static <X extends SyncProfile> void networkedQuit(@NotNull Player player, ProfileCache<X> cache, boolean saveAsync) {
         Optional<X> o = cache.getFromCache(player.getUniqueId());
         if (o.isEmpty()) {
             // This shouldn't happen
@@ -60,17 +60,17 @@ public class QuitMethods {
 
             // Not switching servers (no incoming handshake) -- we can assume they are actually
             // Logging out, and not switching servers
-            Runnable r = () -> {
-                cache.save(profile);
+            Runnable syncRunnable = () -> {
+                cache.saveSynchronously(profile);
                 cache.loader(player.getUniqueId()).uncache(player, profile, false);
                 cache.removeLoader(player.getUniqueId());
                 cache.getLoggerService().debug("Saving player " + player.getName() + " on logout (not switching servers)");
             };
 
-            if (isEnabled && EngineSource.get().isEnabled()) {
-                cache.runAsync(r);
+            if (saveAsync && EngineSource.get().isEnabled()) {
+                cache.runAsync(syncRunnable);
             } else {
-                r.run();
+                syncRunnable.run();
             }
         } else {
             // ----------------------------------------------------------------------- //

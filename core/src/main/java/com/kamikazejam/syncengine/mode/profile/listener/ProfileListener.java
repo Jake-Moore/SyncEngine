@@ -30,6 +30,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -46,10 +47,18 @@ public class ProfileListener implements Listener {
 
     public static <X extends SyncProfile> void quit(@NotNull Player player, ProfileCache<X> cache, boolean isEnabled) {
         cache.getLoggerService().debug("Player " + player.getName() + " quitting, saving profile...");
+        try {
+            quitHelper(player, cache, isEnabled);
+        }catch (IllegalPluginAccessException e) {
+            // try again synchronously
+            quitHelper(player, cache, false);
+        }
+    }
+    private static <X extends SyncProfile> void quitHelper(@NotNull Player player, ProfileCache<X> cache, boolean saveAsync) {
         if (EngineSource.getSyncMode() == SyncMode.STANDALONE) {
-            QuitMethods.standaloneQuit(player, cache, isEnabled);
+            QuitMethods.standaloneQuit(player, cache, saveAsync);
         } else {
-            QuitMethods.networkedQuit(player, cache, isEnabled);
+            QuitMethods.networkedQuit(player, cache, saveAsync);
         }
     }
 
