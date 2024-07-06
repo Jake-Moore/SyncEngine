@@ -3,12 +3,12 @@ package com.kamikazejam.syncengine.mode.profile.handshake;
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.redis.RedisChannel;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
-import com.kamikazejam.kamicommon.util.data.Pair;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
+import com.kamikazejam.syncengine.mode.profile.handshake.data.HandshakeData;
 import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class ProfileHandshakeService<X extends SyncProfile> implements Service {
 
-    private final Map<UUID, CompletableFuture<@Nullable Pair<String, Long>>> handshakeMap = new HashMap<>();
+    private final Map<UUID, CompletableFuture<@Nullable HandshakeData>> handshakeMap = new HashMap<>();
 
     private final SyncProfileCache<X> cache;
     private final String channelName;
@@ -113,7 +113,7 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
                         profile.setReadOnlyTimeStamp(System.currentTimeMillis());
                     }
 
-                    packet.setData(Pair.of(JacksonUtil.toJson(profile), profile.getVersion()));
+                    packet.setData(new HandshakeData(JacksonUtil.toJson(profile), profile.getVersion()));
                     profile.setHandshakeStartTimestamp(System.currentTimeMillis());
 
                     // cache.save(profile); // no need to save when we're redis-ing the json
@@ -135,14 +135,14 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
         Preconditions.checkNotNull(packet.getData(), "JSON cannot be null for handshake in ProfileHandshakeService (in handleReply)");
 
         // Require valid handshake
-        CompletableFuture<@Nullable Pair<String, Long>> future = handshakeMap.get(packet.getHandshakeId());
+        CompletableFuture<@Nullable HandshakeData> future = handshakeMap.get(packet.getHandshakeId());
         if (future == null || future.isDone()) { return; }
 
         // Complete the future with the JSON of the profile
         future.complete(packet.getData());
     }
 
-    public CompletableFuture<@Nullable Pair<String, Long>> requestHandshake(@NotNull SyncProfileLoader<?> loader, SyncServer targetServer, boolean login, long msStart) {
+    public CompletableFuture<@Nullable HandshakeData> requestHandshake(@NotNull SyncProfileLoader<?> loader, SyncServer targetServer, boolean login, long msStart) {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         @Nullable ServerService serverService = EngineSource.getServerService();
         Preconditions.checkNotNull(redisService, "RedisService cannot be null");
@@ -152,7 +152,7 @@ public class ProfileHandshakeService<X extends SyncProfile> implements Service {
         ProfileHandshakePacket packet = new ProfileHandshakePacket(true, login, msStart, serverService.getThisServer().getName(), loader.getUuid(), targetServer.getName(), handshakeId, null);
 
         // Send the handshake REQUEST to the target server
-        CompletableFuture<@Nullable Pair<String, Long>> future = new CompletableFuture<>();
+        CompletableFuture<@Nullable HandshakeData> future = new CompletableFuture<>();
         handshakeMap.put(handshakeId, future);
 
         channel.publish(packet, false);

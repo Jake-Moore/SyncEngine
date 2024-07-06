@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.mode.profile.handshake;
 
 import com.kamikazejam.kamicommon.util.data.Pair;
+import com.kamikazejam.syncengine.mode.profile.handshake.data.HandshakeData;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +25,7 @@ public class ProfileHandshakePacket {
     private UUID handshakeId; // The id of this handshake, for completing it upon reply
     // <json, version>
     @Setter @Nullable
-    private Pair<String, Long> data;
+    private HandshakeData data;
 
     public ProfileHandshakePacket() {}
     public ProfileHandshakePacket(boolean request, boolean login, long msStart, @NotNull String senderServer, @NotNull UUID uuid, @NotNull String targetServer, @NotNull UUID handshakeId, @Nullable Pair<String, Long> data) {
@@ -35,13 +36,13 @@ public class ProfileHandshakePacket {
         this.uuid = uuid;
         this.targetServer = targetServer;
         this.handshakeId = handshakeId;
-        this.data = data;
+        this.data = data == null ? null : new HandshakeData(data.getA(), data.getB());
     }
 
     public @NotNull String getVersion(String def) {
         if (data == null) {
             return def;
         }
-        return data.getB().toString();
+        return Long.toString(data.getVersion());
     }
 }

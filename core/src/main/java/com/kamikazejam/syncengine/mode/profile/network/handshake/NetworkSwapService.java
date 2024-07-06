@@ -2,7 +2,6 @@ package com.kamikazejam.syncengine.mode.profile.network.handshake;
 
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.redis.RedisChannel;
-import com.kamikazejam.kamicommon.util.JacksonUtil;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
@@ -78,8 +77,8 @@ public class NetworkSwapService extends LoggerService implements Service {
 
         // Listen for messages
         channel.subscribe((c, packet) -> {
-            debug("Received message on channel: " + this.channelName + " - " + JacksonUtil.serialize(packet));
             if (!packet.getTargetServer().equalsIgnoreCase(server.getThisServer().getName())) { return; }
+            // debug("Received message on channel: " + this.channelName + " - " + JacksonUtil.serialize(packet));
 
             if (packet.isRequest()) {
                 handleRequest(packet);

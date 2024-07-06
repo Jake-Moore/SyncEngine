@@ -1,9 +1,9 @@
 package com.kamikazejam.syncengine.mode.profile.loader;
 
 import com.kamikazejam.kamicommon.util.Preconditions;
-import com.kamikazejam.kamicommon.util.data.Pair;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
+import com.kamikazejam.syncengine.mode.profile.handshake.data.HandshakeData;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
@@ -42,7 +42,7 @@ public class NetworkedProfileLoader {
 
         // Otherwise we need to check for handshakes
         NetworkProfile networkProfile = EngineSource.getNetworkStore().getOrCreate(L.uuid, L.username);
-        L.cache.getLoggerService().debug("Caching Sync " + L.uuid + " (L: " + L.login + ")");
+        L.cache.getLoggerService().debug("NetworkLoad Sync " + L.uuid + " (L: " + L.login + ")");
 
         // If they are not on another server, load from local
         if (!networkProfile.isOnlineOtherServer()) {
@@ -82,10 +82,10 @@ public class NetworkedProfileLoader {
             //  completed more instantly if the handshake is successful
             // This also allows us to call this method multiple times asynchronously, each waiting for a result
 
-            CompletableFuture<@Nullable Pair<String, Long>> future = L.cache.getHandshakeService().requestHandshake(L, server, L.login, msStart);
+            CompletableFuture<@Nullable HandshakeData> future = L.cache.getHandshakeService().requestHandshake(L, server, L.login, msStart);
             // Retrieve the handshake data (syncJson, version)
-            @Nullable Pair<String, Long> data = future.get(Settings.HANDSHAKE_TIMEOUT_SEC + 3L, TimeUnit.SECONDS);
-            @Nullable String syncJson = (data == null) ? null : data.getA();
+            @Nullable HandshakeData data = future.get(Settings.HANDSHAKE_TIMEOUT_SEC + 3L, TimeUnit.SECONDS);
+            @Nullable String syncJson = (data == null) ? null : data.getJson();
 
             // Attempt to deserialize the Sync object received from the handshake
             @Nullable X temp = JacksonUtil.deserialize(L.cache.getSyncClass(), syncJson);

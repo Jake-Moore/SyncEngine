@@ -123,14 +123,16 @@ public class ProfileListener implements Listener {
         SyncServer server = serverService.get(networkProfile.getLastSeenServer()).orElse(null);
         if (server == null || !server.isOnline()) { return; }
 
-        serverService.debug("Validating Source Server: " + server.getName() + " for " + networkProfile.getUsername());
+        EngineSource.getSwapService().debug("Validating Source Server: " + server.getName() + " for " + networkProfile.getUsername());
 
         // Let the other server know they're swapping
         CompletableFuture<Boolean> future = EngineSource.getSwapService().requestVerification(
                 networkProfile, server
         );
         // If we got a reply and it said the player was not on that server, update NetworkProfile
-        if (!future.get()) {
+        boolean isOnlineThere = future.get();
+        EngineSource.getSwapService().debug("\tSwap Result, isOnline: " + isOnlineThere + " for " + networkProfile.getUsername() + " on " + server.getName());
+        if (!isOnlineThere) {
             // This will hopefully prevent the upcoming caches from trying to handshake
             //  since we just found the player is NOT on the lastSeenServer we thought they were
             networkProfile.setOnline(false);
