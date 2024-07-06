@@ -1,6 +1,7 @@
 ## spigot-jar
 The spigot-jar module compiles a jar meant for installation on a spigot server. It has one dependency: `KamiCommon`.  
-This module just provides the `:core` module with a plugin source.
+This module just provides the `:core` module with a plugin source.  
+As a developer you can follow Steps 1 & 2 below in order to include `SyncEngine` as a dependency. The core module has everything you need, your point of access is `SyncEngineAPI.register(...)`
 
 ## core
 The core module is the primary module for SyncEngine code. It contains everything needed to run SyncEngine **except the providing plugin**. For this it uses the `EngineSource` class which is assumed to be provided with a valid plugin.  

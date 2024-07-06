@@ -18,5 +18,7 @@ SyncEngine handles data synchronization between servers and transitioning data a
 ## Wiki
 See the [Wiki](https://github.com/Jake-Moore/SyncEngine/wiki) for documentation.  
 
-## Developer Notice
+## Developers
+See [MODULES.md](https://github.com/Jake-Moore/SyncEngine/blob/main/MODULES.md) for dependency details.  
+
 Using SyncEngine requires a base understanding of Jackson object mapping. That project provides several [guides](https://github.com/FasterXML/jackson-docs) for developers.
