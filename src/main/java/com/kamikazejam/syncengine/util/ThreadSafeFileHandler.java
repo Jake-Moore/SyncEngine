@@ -43,7 +43,7 @@ public class ThreadSafeFileHandler {
 
             // Atomically move the temp file to the target file (overwriting)
             //  - this method requires the file to exist with a valid directory path
-            Files.move(tempFile, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(tempFile, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } finally {
             lock.unlock();
         }

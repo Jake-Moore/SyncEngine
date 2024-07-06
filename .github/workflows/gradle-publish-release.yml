@@ -35,12 +35,10 @@ jobs:
 
       - name: Build with Gradle 8.7
         if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
+        run: gradle publish
         env:
           LUXIOUS_NEXUS_USER: ${{ secrets.LUXIOUS_NEXUS_USER }}
           LUXIOUS_NEXUS_PASS: ${{ secrets.LUXIOUS_NEXUS_PASS }}
-        run: |
-          chmod +x ./publish.sh
-          ./publish.sh gradle
 
       #--------------------------------------------------------------------------------------------
       #           Create a Github Release

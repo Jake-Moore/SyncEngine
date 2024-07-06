@@ -1,13 +1,13 @@
-## spigot-jar
-The spigot-jar module compiles a jar meant for installation on a spigot server. It has one dependency: `KamiCommon`.  
-This module just provides the `:core` module with a plugin source.  
-As a developer you can follow Steps 1 & 2 below in order to include `SyncEngine` as a dependency. The core module has everything you need, your point of access is `SyncEngineAPI.register(...)`
+## Developer Guide
 
-## core
-The core module is the primary module for SyncEngine code. It contains everything needed to run SyncEngine **except the providing plugin**. For this it uses the `EngineSource` class which is assumed to be provided with a valid plugin.  
-This module is great for shading into your own plugin if you'd like. You just need to do a few things:
+The SyncEngine project only has one module. Depending on how its used, a developer can achieve different goals.  
+For instance, you can shade it into your own plugin if you'd like. You just need to do a few things:
+
+**Developers hooking into the SyncEngine plugin**: Follow Steps 1 & 2
+**Developers shading SyncEngine**: Follow Steps 1 through 4
 
 ### Step 1 - Adding the Repository
+To do anything with SyncEngine, you'll have to add it to your project.  
 First you'll need to add the public maven repository:
 #### Maven [pom.xml]:
 ```xml
@@ -33,11 +33,12 @@ maven {
 ```
 
 ### Step 2 - Adding the Dependency
+Next, add the dependency to your project.
 #### Maven Dependency [pom.xml]
 ```xml
 <dependency>
-  <groupId>com.kamikazejam.syncengine</groupId>
-  <artifactId>core</artifactId>
+  <groupId>com.kamikazejam</groupId>
+  <artifactId>SyncEngine</artifactId>
   <version>{VERSION}</version>
   <scope>compile</scope> <!-- for shading -->
 </dependency>
@@ -45,16 +46,20 @@ maven {
 
 #### Gradle Dependency (groovy) [build.gradle]
 ```groovy
-implementation "com.kamikazejam.kamicommon:core:{VERSION}"
+implementation "com.kamikazejam:SyncEngine:{VERSION}"
 ```
 
 #### Gradle Dependency (kotlin) [build.gradle.kts]
 ```kotlin
-implementation("com.kamikazejam.kamicommon:core:{VERSION}")
+implementation("com.kamikazejam:SyncEngine:{VERSION}")
 ```
 
 
 ### Step 3 - Initializing `EngineSource`
+If you're a developer wanting to tie into SyncEngine, and you're assuming SyncEngine is installed as a plugin, then you are done!  
+
+If you are a developer wanting to shade SyncEngine, then you have a few more steps:
+
 EngineSource is heavily integrated with `KamiCommon`, as such it expects a slightly modified plugin provider: `KamiPlugin`  
 You can swap out your `extends JavaPlugin` with `extends KamiPlugin` and then rename `onEnable` and `onDisable` to `onEnableInner` and `onDisableInner`.
 
@@ -80,7 +85,7 @@ SyncEngine does not shade `KamiCommon`, as such it is necessary that it finds it
 As a developer using SyncEngine you can either add a `KamiCommon` plugin dependency to your plugin, or shade `KamiCommon` into your project as well.  
 The process for shading `KamiCommon` is very similar, and just requires you use `KamiCommon`'s `PluginSource` in the same manner as `EngineSource`. (Call `PluginSource` first on enable).  
 
-All other dependencies (like MongoJack) are shaded into the `core` module, so you don't need to worry about them.
+All other dependencies (like MongoJack) are shaded into the jar, so you don't need to worry about them.
 
 
 

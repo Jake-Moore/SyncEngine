@@ -34,9 +34,7 @@ jobs:
           gradle-version: '8.7'
 
       - name: Build with Gradle 8.7
+        run: gradle build
         env:
           LUXIOUS_NEXUS_USER: ${{ secrets.LUXIOUS_NEXUS_USER }}
           LUXIOUS_NEXUS_PASS: ${{ secrets.LUXIOUS_NEXUS_PASS }}
-        run: |
-          chmod +x ./build.sh
-          ./build.sh gradle
