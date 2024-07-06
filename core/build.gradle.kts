@@ -5,13 +5,8 @@ plugins {
     // unique plugins for this module
 }
 
-val kamiCommonVer = (project.property("kamiCommonVer") as String)
 dependencies {
     // unique dependencies for this module
-    compileOnly("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
-    compileOnly("com.kamikazejam.kamicommon:generic-jar:$kamiCommonVer")
-
-    // Internal Libraries
     shadow("org.mongojack:mongojack:5.0.0")
 }
 
@@ -23,7 +18,6 @@ tasks {
     shadowJar {
         // Relocations
         relocate("com.fasterxml.jackson", "shaded.com.kamikazejam.syncengine.jackson")
-        relocate("io.lettuce.core", "shaded.com.kamikazejam.syncengine.lettuce.core")
         relocate("com.mongodb", "shaded.com.kamikazejam.syncengine.mongodb")
         relocate("org.mongojack", "shaded.com.kamikazejam.syncengine.mongojack")
 
@@ -38,8 +32,7 @@ tasks {
             "name" to rootProject.name,
             "version" to project.version,
             "description" to project.description,
-            "date" to DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
-            "kamicommonVersion" to kamiCommonVer,
+            "date" to DateTimeFormatter.ISO_INSTANT.format(Instant.now())
         )
         inputs.properties(props)
         filesMatching("plugin.yml") {

@@ -19,8 +19,8 @@ if [ -z "$GITHUB_REPOSITORY" ]; then
   fi
 fi
 
-echo "$root_command :spigot-library:build"
-"$root_command" :spigot-library:build || exit 1
+echo "$root_command :core:build"
+"$root_command" :core:build || exit 1
 
 echo "$root_command :spigot-jar:build"
 "$root_command" :spigot-jar:build || exit 1

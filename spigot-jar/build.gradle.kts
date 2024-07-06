@@ -5,17 +5,12 @@ plugins {
     // unique plugins for this module
 }
 
-val kamiCommonVer = (project.property("kamiCommonVer") as String)
 dependencies {
     // unique dependencies for this module
-    compileOnly(project(":spigot-library"))
-    shadow(files(project(":spigot-library")
+    compileOnly(project(":core"))
+    shadow(files(project(":core")
         .dependencyProject.layout.buildDirectory.dir("unpacked-shadow"))
     )
-    // Include KamiCommon utils in the spigot jar (shaded/relocated)
-    //  So we don't need to depend on the KamiCommon plugin
-    shadow("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
-    shadow("com.kamikazejam.kamicommon:generic-jar:$kamiCommonVer")
 }
 
 tasks {
@@ -34,8 +29,7 @@ tasks {
             "name" to rootProject.name,
             "version" to project.version,
             "description" to project.description,
-            "date" to DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
-            "kamicommonVersion" to (project.property("kamiCommonVer") as String),
+            "date" to DateTimeFormatter.ISO_INSTANT.format(Instant.now())
         )
         inputs.properties(props)
         filesMatching("plugin.yml") {
@@ -51,7 +45,6 @@ tasks {
         archiveClassifier.set("")
         configurations = listOf(project.configurations.shadow.get())
 
-        relocate("com.kamikazejam.kamicommon", "shaded.com.kamikazejam.syncengine.kc")
         relocate("com.fasterxml.jackson", "shaded.com.kamikazejam.syncengine.jackson")
         // Internal Relocations
         relocate("reactor", "shaded.com.kamikazejam.syncengine.reactor")
@@ -96,9 +89,9 @@ publishing {
     }
 }
 
-//tasks.register<Copy>("unpackShadow") {
-//    dependsOn(tasks.shadowJar)
-//    from(zipTree(layout.buildDirectory.dir("libs").map { it.file(tasks.shadowJar.get().archiveFileName) }))
-//    into(layout.buildDirectory.dir("unpacked-shadow"))
-//}
-//tasks.getByName("build").finalizedBy(tasks.getByName("unpackShadow"))
+tasks.register<Copy>("unpackShadow") {
+    dependsOn(tasks.shadowJar)
+    from(zipTree(layout.buildDirectory.dir("libs").map { it.file(tasks.shadowJar.get().archiveFileName) }))
+    into(layout.buildDirectory.dir("unpacked-shadow"))
+}
+tasks.getByName("build").finalizedBy(tasks.getByName("unpackShadow"))

@@ -36,7 +36,7 @@ public class ServerPublisher {
                 Bukkit.getPluginManager().callEvent(new SyncServerPublishPingEvent(syncID, syncGroup));
 
             } catch (Exception ex) {
-                redisService.info(ex, "ServerService ServerPublisher: Error publishing PING event");
+                redisService.getLogger().info(ex, "ServerService ServerPublisher: Error publishing PING event");
             }
         });
     }
@@ -64,7 +64,7 @@ public class ServerPublisher {
                 Bukkit.getPluginManager().callEvent(new SyncServerPublishJoinEvent(syncID, syncGroup));
 
             } catch (Exception ex) {
-                redisService.info(ex, "ServerService ServerPublisher: Error publishing JOIN event");
+                redisService.getLogger().info(ex, "ServerService ServerPublisher: Error publishing JOIN event");
             }
         });
     }

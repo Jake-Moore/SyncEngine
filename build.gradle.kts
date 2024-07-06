@@ -1,7 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 @Suppress("PropertyName")
-val VERSION = "0.4.5"
+val VERSION = "0.5.0"
 
 plugins {
     id("java")
@@ -53,6 +53,10 @@ subprojects {
     dependencies {
         // Spigot (from public nexus)
         compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
+
+        // KamiCommon
+        compileOnly("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
+        compileOnly("com.kamikazejam.kamicommon:generic-jar:$kamiCommonVer")
 
         // Annotation Processors
         //   Lombok
