@@ -190,7 +190,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         if (update.getVersion() < sync.getVersion()) {
             throw new IllegalStateException("[" + getName() + "] Update Sync is OLDER? Loading: " + keyToString(sync.getId()) + " from v" + sync.getVersion() + " to v" + update.getVersion());
         }
-        sync.load(update);
+        update.copyInto(sync);
         sync.setVersion(update.getVersion());
     }
 

@@ -17,10 +17,6 @@ public interface Sync<K> {
     // ----------------------------------------------------- //
     //                  User Defined Methods                 //
     // ----------------------------------------------------- //
-    /**
-     * Load another Sync object's data into this Sync object. (Overwrite/Update)
-     */
-    void load(Sync<K> other);
 
     /**
      * Perform a deep copy of this Sync object into the provided Sync object.
