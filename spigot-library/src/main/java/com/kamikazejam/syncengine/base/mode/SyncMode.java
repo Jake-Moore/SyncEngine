@@ -28,12 +28,9 @@ public enum SyncMode {
     //                           MODE SERVICE MANAGEMENT                            //
     // ---------------------------------------------------------------------------- //
     public void enableServices() {
-        // Enable REDIS
-        //   MongoDB handled by StorageMode
-        if (this != NETWORKED) {
-            return;
-        }
         this.getRedisService();
+        this.getServerService();
+        this.getNetworkStore();
     }
 
     private RedisService redisService = null;
@@ -88,6 +85,10 @@ public enum SyncMode {
         if (serverService != null) {
             serverService.shutdown();
             serverService = null;
+        }
+        if (networkStore != null) {
+            networkStore.shutdown();
+            networkStore = null;
         }
     }
 }

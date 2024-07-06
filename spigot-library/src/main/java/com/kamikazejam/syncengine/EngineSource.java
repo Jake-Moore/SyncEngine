@@ -76,6 +76,7 @@ public class EngineSource {
         // Enable Services
         syncMode.enableServices();
         storageMode.enableServices();
+        getSwapService();
 
         // Load Commands
         command = new SyncEngineCommand(getServerService());

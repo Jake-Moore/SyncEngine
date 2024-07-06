@@ -72,7 +72,7 @@ public class ProfileListener implements Listener {
         try {
             validateSwap(networkProfile);
         }catch (Throwable t) {
-            t.printStackTrace();
+            EngineSource.getSwapService().severe(t, "Error validating swap for " + username + " (" + uniqueId + ")");
             event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, ChatColor.RED + "A caching error occurred. Please try again.");
             return;
         }
@@ -126,7 +126,7 @@ public class ProfileListener implements Listener {
         serverService.debug("Validating Source Server: " + server.getName() + " for " + networkProfile.getUsername());
 
         // Let the other server know they're swapping
-        CompletableFuture<Boolean> future = EngineSource.getSwapService().requestHandshake(
+        CompletableFuture<Boolean> future = EngineSource.getSwapService().requestVerification(
                 networkProfile, server
         );
         // If we got a reply and it said the player was not on that server, update NetworkProfile

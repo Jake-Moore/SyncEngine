@@ -32,8 +32,8 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings({"DuplicatedCode", "unused"})
 public class NetworkSwapService extends LoggerService implements Service {
 
-    private final Map<UUID, CompletableFuture<Boolean>> handshakeMap = new HashMap<>();
-    private final String channelName = "sync-network_profile-handshake";
+    private final Map<UUID, CompletableFuture<Boolean>> verifications = new HashMap<>();
+    private final String channelName = "sync-network-swap-service";
 
     private boolean running = false;
     protected RedisChannel<NetworkSwapPacket> channel = null;
@@ -42,6 +42,7 @@ public class NetworkSwapService extends LoggerService implements Service {
 
     @Override
     public boolean start() {
+        info("Starting NetworkSwapService...");
         Preconditions.checkState(!running, "NetworkSwapService is already running!");
 
         @Nullable RedisService redisService = EngineSource.getRedisService();
@@ -53,6 +54,7 @@ public class NetworkSwapService extends LoggerService implements Service {
 
         boolean sub = subscribe(redisService, serverService);
         running = true;
+        info("NetworkSwapService started!");
         return sub;
     }
 
@@ -124,7 +126,7 @@ public class NetworkSwapService extends LoggerService implements Service {
         Preconditions.checkNotNull(packet, "NetworkSwapService cannot be null");
 
         // Require valid handshake
-        CompletableFuture<Boolean> future = handshakeMap.get(packet.getHandshakeId());
+        CompletableFuture<Boolean> future = verifications.get(packet.getHandshakeId());
         if (future == null || future.isDone()) { return; }
         TriState triState = packet.getFound();
         if (triState == null || triState == TriState.NOT_SET) {
@@ -134,7 +136,7 @@ public class NetworkSwapService extends LoggerService implements Service {
         future.complete(packet.getFound().toBoolean());
     }
 
-    public CompletableFuture<Boolean> requestHandshake(NetworkProfile np, SyncServer targetServer) {
+    public CompletableFuture<Boolean> requestVerification(NetworkProfile np, SyncServer targetServer) {
         ServerService serverService = EngineSource.getServerService();
         RedisService redisService = EngineSource.getRedisService();
         Preconditions.checkNotNull(serverService, "ServerService cannot be null");
@@ -146,7 +148,7 @@ public class NetworkSwapService extends LoggerService implements Service {
         // Send the handshake REQUEST to the target server
         CompletableFuture<Boolean> future = new CompletableFuture<Boolean>()
                 .orTimeout(5, TimeUnit.SECONDS);
-        handshakeMap.put(handshakeId, future);
+        verifications.put(handshakeId, future);
 
         channel.publishAsync(packet);
         return future;

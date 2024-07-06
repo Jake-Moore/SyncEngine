@@ -3,24 +3,22 @@ package com.kamikazejam.syncengine.connections.redis;
 import com.kamikazejam.kamicommon.redis.RedisAPI;
 import com.kamikazejam.kamicommon.redis.RedisConnector;
 import com.kamikazejam.kamicommon.util.LoggerService;
-import com.kamikazejam.kamicommon.util.StringUtil;
-import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.connections.config.RedisConfig;
 import lombok.Getter;
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("DuplicatedCode")
 @Getter
-public class RedisService extends LoggerService implements Service {
+public class RedisService implements Service {
+    private static final Logger log = LoggerFactory.getLogger(RedisService.class);
     private boolean running = false;
     private RedisAPI api;
+    private final LoggerService logger;
 
     public RedisService() {
+        this.logger = new RedisLoggerService();
     }
 
     // ------------------------------------------------- //
@@ -29,8 +27,10 @@ public class RedisService extends LoggerService implements Service {
     @Override
     public boolean start() {
         // Create our RedisAPI instance
-        this.api = RedisConnector.getAPI(RedisConfig.get(), this);
+        logger.debug("Starting RedisService...");
+        this.api = RedisConnector.getAPI(RedisConfig.get(), logger);
         this.running = true;
+        logger.info("RedisService started!");
         return true;
     }
 
@@ -38,7 +38,7 @@ public class RedisService extends LoggerService implements Service {
     public boolean shutdown() {
         // If not running, warn and return true (we are already shutdown)
         if (!running) {
-            this.warn("RedisService.shutdown() called while service is not running!");
+            logger.warn("RedisService.shutdown() called while service is not running!");
             return true;
         }
         // Shutdown the RedisAPI instance
@@ -47,39 +47,5 @@ public class RedisService extends LoggerService implements Service {
         }
         this.running = false;
         return true;
-    }
-
-
-
-    // ------------------------------------------------- //
-    //                 LoggerService (KC)                //
-    // ------------------------------------------------- //
-    @Override
-    public boolean isDebug() {
-        return EngineSource.isDebug();
-    }
-
-    @Override
-    public String getLoggerName() {
-        return "RedisService";
-    }
-
-    public JavaPlugin getPlugin() {
-        return EngineSource.get();
-    }
-
-    @Override
-    public void logToConsole(String a, Level level) {
-        // Add the logger name to the start of the msg
-        String content = "[" + getLoggerName() + "] " + a;
-        // Add the plugin name to the VERY start, so it matches existing logging format
-        String plPrefix = "[" + getPlugin().getName() + "] ";
-        if (level == Level.INFO) {
-            Bukkit.getConsoleSender().sendMessage(StringUtil.t(plPrefix + content));
-        } else if (level == Level.FINE) {
-            Bukkit.getConsoleSender().sendMessage(StringUtil.t("&7[DEBUG] " + plPrefix + content));
-        } else {
-            Logger.getLogger("Minecraft").log(level, StringUtil.t(plPrefix + content));
-        }
     }
 }
