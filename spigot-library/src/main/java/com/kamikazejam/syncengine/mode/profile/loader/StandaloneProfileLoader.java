@@ -8,13 +8,11 @@ import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import java.util.Optional;
 
 public class StandaloneProfileLoader {
-    protected static <X extends SyncProfile> Optional<X> cacheStandalone(SyncProfileLoader<X> L) {
+    protected static <X extends SyncProfile> Optional<X> loadStandalone(SyncProfileLoader<X> L) {
         // Try loading from local
         Optional<X> localSync = L.cache.getLocalStore().get(L.uuid);
         if (localSync.isPresent()) {
-            L.sync = localSync.get();
-            L.sync.setCache(L.cache);
-            return Optional.of(L.sync);
+            return localSync;
         }
 
         // Try loading from database
@@ -41,11 +39,12 @@ public class StandaloneProfileLoader {
             L.sync = null;
             return Optional.empty();
         }
-        // We have a valid sync
+
+        // We have a valid sync from Database
         L.sync = o.get();
         L.sync.setCache(L.cache);
 
-        // If we are
+        // For logins -> mark the NetworkProfile as loaded
         if (L.login) {
             NetworkProfile networkProfile = L.cache.getNetworkStore().getOrCreate(L.sync);
             networkProfile.markLoaded(L.login);
@@ -57,8 +56,6 @@ public class StandaloneProfileLoader {
             }
         }
 
-        // Cache the Sync if successful
-        L.cache.cache(L.sync);
         return Optional.of(L.sync);
     }
 }

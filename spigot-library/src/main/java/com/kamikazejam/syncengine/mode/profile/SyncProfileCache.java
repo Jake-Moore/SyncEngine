@@ -295,7 +295,7 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
 
         // If the NetworkProfile is online on this server, then we can save to mongo and update the NetworkProfile
         NetworkProfile np = onp.get();
-        boolean sameSyncServerId = EngineSource.getSyncServerId().equalsIgnoreCase(sync.getSyncServerId());
+        boolean sameSyncServerId = EngineSource.getSyncServerId().equalsIgnoreCase(np.getLastSeenServer());
         if (sameSyncServerId) {
             np.markSaved();
         }

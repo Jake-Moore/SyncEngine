@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
-import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import lombok.Getter;
@@ -36,9 +35,6 @@ public abstract class SyncProfile implements Sync<UUID> {
     @JsonProperty("username")
     private String username;
 
-    @JsonProperty("syncServerId")
-    private String syncServerId; // The SyncEngine server id of the instance that currently holds this profile
-
 
     // ----------------------------------------------------- //
     //                      Transients                       //
@@ -51,11 +47,6 @@ public abstract class SyncProfile implements Sync<UUID> {
     protected transient String loadingSource = null;
     protected transient @Nullable Player player = null;
     protected transient long handshakeStartTimestamp = 0; // the time when a handshake starts (when another server requests that we save this profile)
-
-    // If this object was loaded as a result of a handshake, this will be set to the json when loaded
-    //   Meant for collision detection with json diffing to prevent overwriting newer data
-    @Nullable
-    protected transient String handshakeJson = null;
 
     // The version of the object when it was loaded (FROM A HANDSHAKE), null otherwise (if not loaded from handshake)
     protected transient @Nullable Long handshakeVersion = null;
@@ -118,7 +109,6 @@ public abstract class SyncProfile implements Sync<UUID> {
     @Override
     public void setCache(Cache<UUID, ?> cache) {
         this.cache = (SyncProfileCache) cache;
-        this.syncServerId = EngineSource.getSyncServerId();
     }
 
     @Override
@@ -142,28 +132,6 @@ public abstract class SyncProfile implements Sync<UUID> {
     public void setId(@NotNull UUID id) {
         this.syncId = id;
     }
-
-    private transient boolean initialized = false;
-    @Override
-    public final void initialized() {
-        if (!initialized) {
-            initialized = true;
-            afterInitialized();
-        }
-    }
-    @Override
-    public void afterInitialized() {}
-
-    private transient boolean uninitialized = false;
-    @Override
-    public final void uninitialized() {
-        if (!uninitialized) {
-            uninitialized = true;
-            beforeUninitialized();
-        }
-    }
-    @Override
-    public void beforeUninitialized() {}
 
     @Override
     public boolean isReadOnly() {
@@ -274,14 +242,6 @@ public abstract class SyncProfile implements Sync<UUID> {
         // Fetch the player and check if they're online
         this.player = Bukkit.getPlayer(this.getUniqueId());
         return PlayerUtil.isFullyValidPlayer(this.player);
-    }
-
-    public @Nullable String getSyncServerId() {
-        return this.syncServerId;
-    }
-
-    public void setSyncServerId(@Nullable String syncServerId) {
-        this.syncServerId = syncServerId;
     }
 
 }

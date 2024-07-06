@@ -28,7 +28,6 @@ public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K
     @Override
     public boolean save(@NotNull X sync) {
         // If not called already, call initialized (since we're caching it)
-        sync.initialized();
         this.localCache.put(sync.getId(), sync);
         return true;
     }
@@ -46,9 +45,6 @@ public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K
     @Override
     public boolean remove(@NotNull K key) {
         @Nullable X x = this.localCache.remove(key);
-        if (x != null) {
-            x.uninitialized();
-        }
         return x != null;
     }
 
@@ -72,7 +68,6 @@ public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K
     @Override
     public long clear() {
         final int size = this.localCache.size();
-        this.localCache.values().forEach(Sync::uninitialized);
         this.localCache.clear();
         return size;
     }

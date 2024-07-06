@@ -149,7 +149,7 @@ public class ProfileListener implements Listener {
             long ms2 = System.currentTimeMillis();
             SyncProfileLoader<X> loader = cache.loader(uniqueId);
             loader.login(username);
-            loader.fetch();
+            loader.fetch(true);
 
             if (loader.isDenyJoin()) {
                 // For the first 100 seconds, don't give the nasty loader reason, but a pretty server start error

@@ -30,32 +30,6 @@ public interface Sync<K> {
     // ----------------------------------------------------- //
 
     /**
-     * Used to call afterInitialized (only once)
-     */
-    @ApiStatus.Internal
-    void initialized();
-
-    /**
-     * Called after this object is created and initialized <p>
-     * Called: On Instantiator, On Load from MongoDb
-     */
-    @ApiStatus.Experimental
-    void afterInitialized();
-
-    /**
-     * Used to call beforeUninitialized (only once)
-     */
-    @ApiStatus.Internal
-    void uninitialized();
-
-    /**
-     * Called before this object is deleted / uninitialized <p>
-     * Called: On Remove from Local Cache (which includes deletes)
-     */
-    @ApiStatus.Experimental
-    void beforeUninitialized();
-
-    /**
      * Gets the unique identifier of our Sync. This can be a String representation of anything (like a UUID).
      * It just needs to be unique and able to be used as a key in a HashMap.
      *

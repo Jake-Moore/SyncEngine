@@ -2,7 +2,9 @@ package com.kamikazejam.syncengine.util;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import com.kamikazejam.syncengine.base.Sync;
 import lombok.SneakyThrows;
@@ -10,6 +12,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("unused")
 public class JacksonUtil {
     public static final @NotNull String ID_FIELD = "_id";
 
@@ -17,7 +20,15 @@ public class JacksonUtil {
     public static @NotNull ObjectMapper getMapper() {
         if (mapper != null) return mapper;
         mapper = new ObjectMapper();
-        // mapper.enable(SerializationFeature.INDENT_OUTPUT);  // Optional: enable pretty printing
+        // Optional: enable pretty printing
+        // mapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+        // Don't fail on empty POJOs
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+
+        // to prevent exception when encountering unknown property:
+        //  i.e. if the json has a property no longer in the class
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         // Configure Jackson to only use fields for serialization (ignoring transient fields)
         //   We have to disable setters and getters, otherwise a transient getter or setter will cause it to be serialized

@@ -201,7 +201,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
             KUtil.printStackTrace("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
         }
 
-        cache(sync);
+        this.cache(sync);
         boolean mongo = getDatabaseStore().save(sync);
         if (!mongo) {
             loggerService.info("Failed to save Sync " + keyToString(sync.getId()));
@@ -240,7 +240,9 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
             updateSyncFromNewer(o.get(), sync);
         } else {
             getLocalStore().save(sync);
+            this.getLoggerService().debug("Cached sync " + sync.getId());
         }
+        sync.setCache(this);
     }
 
     @Override
@@ -278,12 +280,10 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     @Override
     public @NotNull X create(@NotNull K key) {
         X x = instantiator.instantiate();
-        x.initialized();
 
         x.setId(key);
-        x.setCache(this);
         // Cache and save this object
-        cache(x);
+        this.cache(x);
         x.save();
         return x;
     }

@@ -14,7 +14,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -25,101 +24,107 @@ import java.util.concurrent.TimeoutException;
  * It just contains the cacheNetworkNode method in a dedicated class
  */
 public class NetworkedProfileLoader {
-    protected static <X extends SyncProfile> Optional<X> cacheNetworkNode(SyncProfileLoader<X> L) {
+    protected static <X extends SyncProfile> void loadNetworkNode(SyncProfileLoader<X> L) {
         ServerService serverService = EngineSource.getServerService();
         Preconditions.checkNotNull(serverService, "ServerService is null");
 
         @Nullable Player player = Bukkit.getServer().getPlayer(L.uuid);
         if (!L.login && player != null && player.isOnline()) {
-            // For PlayerJoinEvent calls, isValid may be false, but isOnline is true
-            // We just care about them being online (indicator we can load this Profile from local)
+            // If they are not logging in (no handshake possible), and they are online:
+            //   we can just load from local
 
             L.load(true);
             // Try to retrieve from the cache when they are online, skipping handshake logic.
             if (L.sync != null) {
-                if (!L.cache.isCached(L.uuid)) {
-                    L.cache.cache(L.sync);
-                }
-                L.sync = L.cache.getLocalStore().get(L.uuid).orElseThrow();
-                L.sync.setCache(L.cache);
-                return Optional.of(L.sync);
+                return;
             }
         }
 
+        // Otherwise we need to check for handshakes
         NetworkProfile networkProfile = EngineSource.getNetworkStore().getOrCreate(L.uuid, L.username);
         L.cache.getLoggerService().debug("Caching Sync " + L.uuid + " (L: " + L.login + ")");
-        if (networkProfile.isOnlineOtherServer()) {
-            SyncServer server = serverService.get(networkProfile.getLastSeenServer()).orElse(null);
-            if (server != null && server.isOnline()) {
 
-                // Handshake
-                final String name = server.getName();
-                try {
-                    // CompletableFuture allows us to complete the future from various threads/locations
-                    //  And also have the 'slow' timeout loop run in the background, while the response can be
-                    //  completed more instantly if the handshake is successful
-                    // This also allows us to call this method multiple times asynchronously, each waiting for a result
-                    L.cache.getLoggerService().debug("Starting handshake for " + L.uuid + " (login: " + L.login + ")");
-                    long msStart = System.currentTimeMillis();
-                    CompletableFuture<@Nullable Pair<String, Long>> future = L.cache.getHandshakeService().requestHandshake(L, server, L.login, msStart);
-                    @Nullable Pair<String, Long> data = future.get(Settings.HANDSHAKE_TIMEOUT_SEC + 3L, TimeUnit.SECONDS);
-                    @Nullable String syncJson = (data == null) ? null : data.getA();
+        // If they are not on another server, load from local
+        if (!networkProfile.isOnlineOtherServer()) {
+            L.load(networkProfile.isOnlineThisServer());
+            return;
+        }
 
-                    @Nullable X temp = JacksonUtil.deserialize(L.cache.getSyncClass(), syncJson);
-                    if (temp != null) {
-                        if (L.sync == null) {
-                            // If there is no sync, use the one we received from the handshake
-                            L.sync = temp;
-                            L.sync.setLoadingSource("Redis Handshake");
-                            L.sync.setCache(L.cache);
-                        } else {
-                            // Otherwise, Update our current object with the newer one
-                            L.cache.updateSyncFromNewer(L.sync, temp);
-                        }
-                        L.cache.getLoggerService().debug("Updated Sync from handshake for " + L.uuid + " version: " + L.sync.getVersion() + " | HandShakeVer: " + temp.getVersion());
-                    }
+        // Fetch the server they were last seen on
+        SyncServer server = serverService.get(networkProfile.getLastSeenServer()).orElse(null);
 
-                    // if sync is still null (other server couldn't find it), load from DB
-                    if (L.sync == null) {
-                        L.cache.getLoggerService().debug("Handshake failed to find sync for " + L.uuid + ", loading from DB");
-                        L.load(false);
-                    }
-                    // if sync is STILL null, something broke
-                    if (L.sync == null) {
-                        L.cache.getLoggerService().info("Handshake failed to find sync for " + L.uuid + ", both handshake and loading from DB FAILED");
-                        L.denyJoin = true;
-                        L.joinDenyReason = ChatColor.RED + "A error occurred while loading your profile.  Please try again.";
-                        return Optional.empty();
-                    }
+        // Target server isn't online, or there is no recent server -> load from database
+        if (server == null || !server.isOnline()) {
+            L.cache.getLoggerService().debug("Target server '" + (server != null ? server.getName() : "n/a") + "' not online for handshake for " + L.uuid + ", loading from database");
+            L.load(false);
+            return;
+        }
 
-                    // Update sync with data from this handshake
-                    L.sync.setHandshakeJson(syncJson);
-                    L.sync.setSyncServerId(name);
-                    if (temp != null) {
-                        L.sync.setHandshakeVersion(temp.getVersion());
-                    }
+        // We have a valid server -> handshake
+        long msStart = System.currentTimeMillis();
+        L.cache.getLoggerService().debug("Starting handshake for " + L.uuid + " (login: " + L.login + ")");
 
-                    L.cache.getLoggerService().debug("Handshake complete for " + L.uuid + " (in " + (System.currentTimeMillis() - msStart) + "ms)");
+        // Perform the handshake
+        if (handshake(L, server, msStart)) {
+            // Log how long it took
+            L.cache.getLoggerService().debug("Handshake complete for " + L.uuid + " (in " + (System.currentTimeMillis() - msStart) + "ms)");
+        }
+    }
 
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    // Timed out / failed handshake
-                    L.denyJoin = true;
-                    L.joinDenyReason = ChatColor.RED + "Timed out while loading your profile.  Please try again.";
-                    L.cache.getLoggerService().debug("Handshake timed out for " + L.uuid);
-                    EngineSource.getNetworkStore().verifyPlayerOrigin(L.uuid, L.username, server);
+
+    /**
+     * @return True iff the handshake was successful, should log errors if returning false
+     */
+    private static <X extends SyncProfile> boolean handshake(SyncProfileLoader<X> L, SyncServer server, long msStart) {
+        try {
+            // CompletableFuture allows us to complete the future from various threads/locations
+            //  And also have the 'slow' timeout loop run in the background, while the response can be
+            //  completed more instantly if the handshake is successful
+            // This also allows us to call this method multiple times asynchronously, each waiting for a result
+
+            CompletableFuture<@Nullable Pair<String, Long>> future = L.cache.getHandshakeService().requestHandshake(L, server, L.login, msStart);
+            // Retrieve the handshake data (syncJson, version)
+            @Nullable Pair<String, Long> data = future.get(Settings.HANDSHAKE_TIMEOUT_SEC + 3L, TimeUnit.SECONDS);
+            @Nullable String syncJson = (data == null) ? null : data.getA();
+
+            // Attempt to deserialize the Sync object received from the handshake
+            @Nullable X temp = JacksonUtil.deserialize(L.cache.getSyncClass(), syncJson);
+            // If we have a Sync from the handshake:
+            if (temp != null) {
+                if (L.sync == null) {
+                    // If there is no sync, use the one we received from the handshake
+                    L.sync = temp;
+                    L.sync.setLoadingSource("Redis Handshake");
+                    L.sync.setCache(L.cache);
+                } else {
+                    // Otherwise, Update our current object with the newer one
+                    L.cache.updateSyncFromNewer(L.sync, temp);
                 }
-            } else {
-                // Target server isn't online, or there is no recent server
-                L.cache.getLoggerService().debug("Target server '" + (server != null ? server.getName() : "n/a") + "' not online for handshake for " + L.uuid + ", loading from database");
-                L.load(false);
+                L.cache.getLoggerService().debug("Updated Sync from handshake for " + L.uuid + " version: " + L.sync.getVersion() + " | HandShakeVer: " + temp.getVersion());
+                return true;
             }
-        } else {
-            L.load(networkProfile.isOnlineThisServer()); // only load from local if they're online this server
-        }
 
-        if (L.sync != null && L.login) {
-            L.cache.cache(L.sync);
+            // Otherwise, there was no Sync in handshake -> load from DB
+            L.cache.getLoggerService().debug("Handshake failed to find sync for " + L.uuid + ", loading from DB");
+            L.load(false);
+
+            if (L.sync != null) {
+                return true;
+            }
+
+            // if sync is STILL null, something broke
+            L.cache.getLoggerService().info("Handshake failed to find sync for " + L.uuid + ", both handshake and loading from DB FAILED");
+            L.denyJoin = true;
+            L.joinDenyReason = ChatColor.RED + "A error occurred while loading your profile.  Please try again.";
+            return false;
+
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            // Timed out / failed handshake
+            L.denyJoin = true;
+            L.joinDenyReason = ChatColor.RED + "Timed out while loading your profile.  Please try again.";
+            L.cache.getLoggerService().debug("Handshake timed out for " + L.uuid);
+            EngineSource.getNetworkStore().verifyPlayerOrigin(L.uuid, L.username, server);
+            return false;
         }
-        return Optional.ofNullable(L.sync);
     }
 }

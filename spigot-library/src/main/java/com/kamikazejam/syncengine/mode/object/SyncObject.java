@@ -105,33 +105,6 @@ public abstract class SyncObject implements Sync<String> {
         this.syncId = id;
     }
 
-    private transient boolean initialized = false;
-    @Override
-    public final void initialized() {
-        if (!initialized) {
-            initialized = true;
-            afterInitialized();
-        }
-    }
-
-    @Override
-    public void afterInitialized() {
-    }
-
-
-    private transient boolean uninitialized = false;
-    @Override
-    public final void uninitialized() {
-        if (!uninitialized) {
-            uninitialized = true;
-            beforeUninitialized();
-        }
-    }
-
-    @Override
-    public void beforeUninitialized() {
-    }
-
     @Override
     public boolean isReadOnly() {
         return readOnlyTimeStamp != null && (System.currentTimeMillis() - readOnlyTimeStamp) <= 1000;

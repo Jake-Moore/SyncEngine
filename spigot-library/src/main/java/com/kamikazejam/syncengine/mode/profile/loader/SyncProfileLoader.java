@@ -11,6 +11,7 @@ import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
 import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -62,7 +63,6 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
                 sync.setId(uuid);
                 sync.setLoadingSource("New Profile");
                 sync.setCache(cache);
-                sync.initialized();
             } else {
                 // Doesn't exist
                 sync = null;
@@ -70,9 +70,8 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
         }
     }
 
-    public Optional<X> fetch() { return fetch(true); }
     @Override
-    public Optional<X> fetch(boolean ignored) { // boolean saveToLocalCache doesn't matter on SyncProfiles
+    public Optional<X> fetch(boolean saveToLocalCache) { // boolean saveToLocalCache doesn't matter on SyncProfiles
         reset();
 
         if (login) {
@@ -86,10 +85,24 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
         }
 
         if (EngineSource.getSyncMode() == SyncMode.STANDALONE) {
-            return StandaloneProfileLoader.cacheStandalone(this);
+            StandaloneProfileLoader.loadStandalone(this);
         }else {
-            return NetworkedProfileLoader.cacheNetworkNode(this);
+            NetworkedProfileLoader.loadNetworkNode(this);
         }
+
+        // The above two methods will load the sync into this variable if it exists
+        Optional<X> o = Optional.ofNullable(this.sync);
+
+        // Ensure the sync is cached and has a valid cache reference
+        o.ifPresent(sync -> {
+            @Nullable Player p = Bukkit.getPlayer(sync.getUniqueId());
+            if (saveToLocalCache) {
+                cache.cache(sync);
+            }else {
+                sync.setCache(cache);
+            }
+        });
+        return o;
     }
 
     @Override
@@ -114,14 +127,14 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
     @NotNull
     public CompletableFuture<X> cacheOrCreate() {
         return CompletableFuture.supplyAsync(() -> {
-            Optional<X> o = fetch();
+            Optional<X> o = fetch(true);
             if (o.isPresent()) {
                 return o.get();
             }
 
             // Fake the login in order to trigger the logic needed to create a new profile
             login = true;
-            @Nullable X sync = fetch().orElse(null);
+            @Nullable X sync = fetch(true).orElse(null);
             login = false;
 
             // Throw error if still null (can't return null, so throw exception)

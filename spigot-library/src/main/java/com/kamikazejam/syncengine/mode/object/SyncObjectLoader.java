@@ -48,7 +48,6 @@ public class SyncObjectLoader<X extends SyncObject> implements SyncLoader<X> {
             X p = sync.get();
             if (saveToLocalCache && p != null && !loadedFromLocal) {
                 this.cache.cache(p);
-                this.cache.getLoggerService().debug("Cached sync " + p.getId());
             }
             // Ensure the Sync has its cache set
             if (p != null) {

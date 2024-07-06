@@ -98,13 +98,7 @@ public class MongoStorage extends StorageService {
         Preconditions.checkNotNull(key);
         try {
             Bson query = Filters.eq(ID_FIELD, cache.keyToString(key));
-            Optional<X> o = Optional.ofNullable(getJackson(cache).findOne(query));
-            // Initialize the object if it exists
-            o.ifPresent(x -> {
-                x.setCache(cache);
-                x.initialized();
-            });
-            return o;
+            return Optional.ofNullable(getJackson(cache).findOne(query));
         } catch (MongoException ex) {
             cache.getLoggerService().info(ex, "MongoDB error getting Object from MongoDB Layer: " + key);
             return Optional.empty();
