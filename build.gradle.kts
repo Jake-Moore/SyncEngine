@@ -3,7 +3,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 @Suppress("PropertyName")
-val VERSION = "0.5.1"
+val VERSION = "0.5.2"
 
 plugins {
     id("java")
@@ -79,7 +79,7 @@ tasks {
 
     shadowJar {
         // Relocations
-        relocate("com.fasterxml.jackson", "shaded.com.kamikazejam.syncengine.jackson")
+        // don't relocate jackson
         relocate("com.mongodb", "shaded.com.kamikazejam.syncengine.mongodb")
         relocate("org.mongojack", "shaded.com.kamikazejam.syncengine.mongojack")
 
