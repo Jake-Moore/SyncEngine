@@ -13,10 +13,7 @@ import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
 import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Blocking;
-import org.jetbrains.annotations.NonBlocking;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -307,6 +304,9 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      */
     @ApiStatus.Internal
     void saveIndexCache();
+
+    @Nullable
+    <T> K getSyncIdByIndex(IndexedField<X, T> index, T value);
 
 }
 

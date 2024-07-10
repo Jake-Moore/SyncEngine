@@ -23,6 +23,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -396,5 +397,10 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     @Override
     public void saveIndexCache() {
         EngineSource.getStorageService().saveIndexCache(this);
+    }
+
+    @Override
+    public <T> @Nullable K getSyncIdByIndex(IndexedField<X, T> index, T value) {
+        return EngineSource.getStorageService().getSyncIdByIndex(this, index, value);
     }
 }
