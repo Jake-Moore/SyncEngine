@@ -5,11 +5,14 @@ import com.kamikazejam.kamicommon.gson.JsonParser;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
+import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.connections.storage.iterable.SyncFilesIterable;
 import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import com.kamikazejam.syncengine.util.ThreadSafeFileHandler;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -17,10 +20,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings("unnused")
 public class FileStorage extends StorageService {
@@ -49,6 +49,9 @@ public class FileStorage extends StorageService {
             sync.setVersion(sync.getVersion() + 1);
             // Use ThreadSafeFileHandler
             ThreadSafeFileHandler.writeFile(targetFile.toPath(), JacksonUtil.toJson(sync));
+
+            // Cache Indexes
+            cache.cacheIndexes(sync, true);
             return true;
         } catch (VersionMismatchException v) {
             // pass through
@@ -193,13 +196,118 @@ public class FileStorage extends StorageService {
     // ------------------------------------------------- //
     //                 Helper Methods                    //
     // ------------------------------------------------- //
-    private <K, X extends Sync<K>> File getCacheFolder(Cache<K, X> cache) {
+    private <K, X extends Sync<K>> File getDbFolder(Cache<K, X> cache) {
         File storageFolder = EngineSource.getStorageMode().getFileStorageFolder();
         // Can use short db name since we have a local file system, no need for collision avoidance with the group name
-        return new File(storageFolder + File.separator + cache.getDbNameShort() + File.separator + cache.getName());
+        return new File(storageFolder + File.separator + cache.getDbNameShort());
+    }
+    private <K, X extends Sync<K>> File getCacheFolder(Cache<K, X> cache) {
+        return new File(getDbFolder(cache) + File.separator + cache.getName());
     }
 
     private <K, X extends Sync<K>> File getTargetFile(Cache<K, X> cache, K key) {
         return new File(getCacheFolder(cache), cache.keyToString(key) + ".json");
+    }
+
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+    //  Map<CacheName,   List<IndexedField>  >
+    protected final Map<String, List<IndexedField<?, ?>>> cacheIndexes = new HashMap<>();
+    //  Map<CacheName,   Map<FieldName,   Map<FieldValue, SyncKey>   >   >
+    protected final Map<String, Map<String, Map<Object, Object>>> indexMappings = new HashMap<>();
+
+    @Override
+    public <K, X extends Sync<K>, T> void registerIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index) {
+        List<IndexedField<?,?>> fields = cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
+        fields.add(index);
+    }
+
+    @Override
+    public <K, X extends Sync<K>> void cacheIndexes(@NotNull SyncCache<K, X> cache, @NotNull X sync, boolean updateFile) {
+
+        // Step 1 - Remove any stale data from the cache (i.e. if a field value became null -> remove it)
+        for (IndexedField<?, ?> index : cacheIndexes.getOrDefault(cache.getName(), new ArrayList<>())) {
+            // Grab the cache for this field name
+            Map<Object, Object> indexCache = indexMappings.getOrDefault(cache.getName(), new HashMap<>()).get(index.getName());
+            if (indexCache == null) { continue; }
+
+            // Compile a list of index mappings to remove
+            List<Object> toRemove = new ArrayList<>();
+            for (Map.Entry<Object, Object> entry : indexCache.entrySet()) {
+                // Only scan for indexes mapped to this Sync
+                if (!Objects.equals(entry.getValue(), sync.getId())) { continue; }
+
+                // If the value in this field is now null -> have it removed from the cache (no longer mapped)
+                if (index.getValue(sync) == null) {
+                    toRemove.add(entry.getKey());
+                }
+            }
+            toRemove.forEach(indexCache::remove);
+        }
+
+        // Step 2 - Update the cache with current field data (update field -> Sync mapping)
+        for (IndexedField<?, ?> index : cacheIndexes.getOrDefault(cache.getName(), new ArrayList<>())) {
+            Map<Object, Object> indexCache = indexMappings.getOrDefault(cache.getName(), new HashMap<>()).get(index.getName());
+
+            @Nullable Object value = index.getValue(sync);
+            if (value == null) { continue; }
+
+            // Cache this field's value mapped to our Sync
+            @Nullable Object old = indexCache.put(value, sync.getId());
+            if (old != null && !Objects.equals(old, sync.getId())) {
+                cache.getLoggerService().severe("Duplicate index value for field " + index.getName() + " in cache " + cache.getName() + " Previous Sync Id: " + old + " New Sync Id: " + sync.getId());
+            }
+        }
+
+        if (updateFile) {
+            cache.saveIndexCache();
+        }
+    }
+
+    @SneakyThrows
+    @Override
+    public <K, X extends Sync<K>> void saveIndexCache(@NotNull SyncCache<K, X> cache) {
+        File indexFile = new File(getDbFolder(cache), cache.getName() + "_indexes.json");
+        
+        JsonObject json = new JsonObject();
+
+        // Loop through all the registered indexes to fetch the mappings
+        for (IndexedField<?, ?> indexed : cacheIndexes.getOrDefault(cache.getName(), new ArrayList<>())) {
+            // Grab the mappings for this index
+            Map<Object, Object> indexCache = indexMappings.getOrDefault(cache.getName(), new HashMap<>()).get(indexed.getName());
+            if (indexCache == null) { continue; }
+
+            JsonObject indexJson = new JsonObject();
+            for (Map.Entry<Object, Object> entry : indexCache.entrySet()) {
+                indexJson.addProperty(entry.getKey().toString(), entry.getValue().toString());
+            }
+            json.add(indexed.getName(), indexJson);
+        }
+        
+        // Write to the file
+        ThreadSafeFileHandler.writeFile(indexFile.toPath(), json.toString());
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <K, X extends Sync<K>, T> @Nullable X getByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value) {
+        Map<Object, Object> indexCache = indexMappings.getOrDefault(cache.getName(), new HashMap<>()).get(index.getName());
+        if (indexCache == null) { return null; }
+
+        Object syncId = indexCache.get(value);
+        if (syncId == null) { return null; }
+
+        X sync = this.get(cache, (K) syncId).orElse(null);
+        if (sync == null) {
+            // Remove the stale index mapping
+            indexCache.remove(value);
+            return null;
+        }
+
+        // Cache it (which will update if necessary) and return the Sync
+        cache.cache(sync);
+        return sync;
     }
 }

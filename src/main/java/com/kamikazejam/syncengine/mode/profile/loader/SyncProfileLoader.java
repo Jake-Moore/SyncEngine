@@ -140,7 +140,7 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
             // Throw error if still null (can't return null, so throw exception)
             if (sync == null) {
                 String msg = "Failed to create new profile for username: " + username + " (UUID: " + uuid + ")";
-                cache.getLoggerService().info(msg);
+                cache.getLoggerService().severe(msg);
                 throw new RuntimeException(msg);
             }
 

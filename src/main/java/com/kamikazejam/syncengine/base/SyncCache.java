@@ -7,6 +7,7 @@ import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.base.update.SyncUpdater;
@@ -22,11 +23,9 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -363,5 +362,35 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     @Override
     public @NotNull SyncInstantiator<K, X> getInstantiator() {
         return instantiator;
+    }
+
+    @Override
+    public <T> IndexedField<X, T> registerIndex(@NotNull IndexedField<X, T> field) {
+        getLoggerService().debug("Registering index: " + field.getName());
+        EngineSource.getStorageService().registerIndex(this, field);
+        return field;
+    }
+
+    @Override
+    public void cacheIndexes(@NotNull X sync, boolean save) {
+        EngineSource.getStorageService().cacheIndexes(this, sync, save);
+    }
+
+    @Override
+    public void saveIndexCache() {
+        EngineSource.getStorageService().saveIndexCache(this);
+    }
+
+    @Override
+    public <T> @Nullable X getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value) {
+        // 1. -> Check local cache (brute force)
+        for (X sync : getLocalStore().getAll()) {
+            if (field.equals(field.getValue(sync), value)) {
+                return sync;
+            }
+        }
+
+        // 2. -> Check database (uses cache or mongodb)
+        return EngineSource.getStorageService().getByIndex(this, field, value);
     }
 }

@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
+import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.connections.config.MongoConfig;
 import com.kamikazejam.syncengine.connections.monitor.MongoMonitor;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
@@ -128,6 +130,9 @@ public class MongoStorage extends StorageService {
             // 3. Continue (Version passed, save the object)
             sync.setVersion(sync.getVersion() + 1);
             getJackson(cache).save(sync);
+
+            // Update Indexes
+            cache.cacheIndexes(sync, true);
             return true;
         } catch (VersionMismatchException v) {
             // pass through
@@ -352,4 +357,27 @@ public class MongoStorage extends StorageService {
 //        cache.getLoggerService().info(ex,  err);
 //        return false;
 //    }
+
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+
+    @Override
+    public <K, X extends Sync<K>, T> void registerIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index) {
+        // TODO register with mongo
+    }
+    @Override
+    public <K, X extends Sync<K>> void cacheIndexes(@NotNull SyncCache<K, X> cache, @NotNull X sync, boolean updateFile) {
+        // do nothing -> MongoDB handles this
+    }
+    @Override
+    public <K, X extends Sync<K>> void saveIndexCache(@NotNull SyncCache<K, X> cache) {
+        // do nothing -> MongoDB handles this
+    }
+    @Override
+    public <K, X extends Sync<K>, T> @Nullable X getByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value) {
+        // TODO fetch with mongo
+        return null;
+    }
 }

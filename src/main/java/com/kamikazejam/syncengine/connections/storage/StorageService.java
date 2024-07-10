@@ -3,9 +3,12 @@ package com.kamikazejam.syncengine.connections.storage;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.Sync;
+import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -59,5 +62,14 @@ public abstract class StorageService extends LoggerService implements Service {
      * @return If the StorageService is ready to be used for a cache.
      */
     public abstract boolean canCache();
+
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+    public abstract <K, X extends Sync<K>, T> void registerIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index);
+    public abstract <K, X extends Sync<K>> void cacheIndexes(@NotNull SyncCache<K, X> cache, @NotNull X sync, boolean updateFile);
+    public abstract <K, X extends Sync<K>> void saveIndexCache(@NotNull SyncCache<K, X> cache);
+    public abstract <K, X extends Sync<K>, T> @Nullable X getByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value);
 
 }

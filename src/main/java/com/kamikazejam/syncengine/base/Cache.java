@@ -4,6 +4,7 @@ import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.cache.SyncLoader;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.mode.object.ObjectCache;
@@ -12,10 +13,7 @@ import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
 import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Blocking;
-import org.jetbrains.annotations.NonBlocking;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -275,5 +273,29 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * Returns the SyncInstantiator for the Sync object in this cache.
      */
     @NotNull SyncInstantiator<K, X> getInstantiator();
+
+    /**
+     * Register an index for this cache.
+     * @return The registered index (for chaining)
+     */
+    <T> IndexedField<X, T> registerIndex(@NotNull IndexedField<X, T> field);
+
+    /**
+     * Updates the indexes cache with the provided Sync object.
+     */
+    @ApiStatus.Internal
+    void cacheIndexes(@NotNull X sync, boolean save);
+
+    /**
+     * Saves the index cache to storage.
+     */
+    @ApiStatus.Internal
+    void saveIndexCache();
+
+    /**
+     * Retrieves an object by the provided index field and its value.
+     */
+    @Nullable
+    <T> X getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value);
 }
 
