@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.connections.storage;
 
 import com.google.common.base.Preconditions;
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
@@ -117,7 +118,7 @@ public class MongoStorage extends StorageService {
     }
 
     @Override
-    public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) throws VersionMismatchException {
+    public <K, X extends Sync<K>> @NotNull TriState save(Cache<K, X> cache, X sync) throws VersionMismatchException {
 
         // Try saving to MongoDB with Jackson and catch/fix a host of possible errors we can receive
         try {
@@ -128,34 +129,40 @@ public class MongoStorage extends StorageService {
             @Nullable X database = getJackson(cache).find(query).projection(Projections.include(ID_FIELD, "version")).first();
             @Nullable Long dbVer = (database == null) ? null : database.getVersion();
 
-            // 2. Apply Optimistic Versioning (only fails with a valid, non-equal database version)
+            // 2. If we have no changes to the json, don't bother writing (save the IO)
+            if (JacksonUtil.toJson(sync).equals(JacksonUtil.toJson(database))) {
+                cache.getLoggerService().debug("No changes to save for: " + sync.getId());
+                return TriState.NOT_SET;
+            }
+
+            // 3. Apply Optimistic Versioning (only fails with a valid, non-equal database version)
             if (dbVer != null && dbVer != sync.getVersion()) {
                 throw new VersionMismatchException(cache, sync.getVersion(), dbVer);
             }
 
-            // 3. Continue (Version passed, save the object)
+            // 4. Continue (Version passed, save the object)
             sync.setVersion(sync.getVersion() + 1);
             getJackson(cache).save(sync);
 
             // Cache Indexes
             cache.cacheIndexes(sync, true);
-            return true;
+            return TriState.TRUE;
         } catch (VersionMismatchException v) {
             // pass through
             throw v;
         } catch (MongoWriteException ex1) {
             // Handle the MongoWriteException
-            return handleMongoWriteException(ex1, cache, sync);
+            return TriState.byBoolean(handleMongoWriteException(ex1, cache, sync));
 
         } catch (MongoException ex) {
             // Log the MongoException (unknown Mongo error)
             cache.getLoggerService().info(ex, "MongoDB error saving Object to MongoDB Layer: " + sync.getId());
-            return false;
+            return TriState.FALSE;
 
         } catch (Exception expected) {
             // Handle any other exception
             cache.getLoggerService().info(expected, "Error saving Object to MongoDB Layer: " + sync.getId());
-            return false;
+            return TriState.FALSE;
         }
     }
 

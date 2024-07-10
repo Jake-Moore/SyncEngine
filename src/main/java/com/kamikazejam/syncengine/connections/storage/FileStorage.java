@@ -2,6 +2,7 @@ package com.kamikazejam.syncengine.connections.storage;
 
 import com.kamikazejam.kamicommon.gson.JsonObject;
 import com.kamikazejam.kamicommon.gson.JsonParser;
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
@@ -32,7 +33,7 @@ public class FileStorage extends StorageService {
     //                 StorageService                    //
     // ------------------------------------------------- //
     @Override
-    public <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) throws VersionMismatchException {
+    public <K, X extends Sync<K>> @NotNull TriState save(Cache<K, X> cache, X sync) throws VersionMismatchException {
         File targetFile = getTargetFile(cache, sync.getId());
 
         // Write the Object json to the file
@@ -45,20 +46,34 @@ public class FileStorage extends StorageService {
                 throw new VersionMismatchException(cache, sync.getVersion(), dbVer);
             }
 
+            // If we have no changes to the json, don't bother writing (save the IO)
+            @NotNull String newJson = JacksonUtil.toJson(sync);
+            if (newJson.equals(json)) {
+                cache.getLoggerService().debug("No changes to save for: " + sync.getId());
+                // It is 'saved' successfully (i.e. database has the same data)
+                return TriState.NOT_SET;
+            }
+
             // Increment the Version and write the file
-            sync.setVersion(sync.getVersion() + 1);
-            // Use ThreadSafeFileHandler
-            ThreadSafeFileHandler.writeFile(targetFile.toPath(), JacksonUtil.toJson(sync));
+            long newVersion = sync.getVersion() + 1;
+            sync.setVersion(newVersion);
+            // We already used Jackson to get the JSON, rather than calling it again
+            //  we can just modify the json directly for this static field
+            JsonObject syncJson = JsonParser.parseString(newJson).getAsJsonObject();
+            syncJson.addProperty("version", newVersion);
+
+            // Use ThreadSafeFileHandler, must obtain the json again since version field was updated
+            ThreadSafeFileHandler.writeFile(targetFile.toPath(), syncJson.toString());
 
             // Cache Indexes
             cache.cacheIndexes(sync, true);
-            return true;
+            return TriState.TRUE;
         } catch (VersionMismatchException v) {
             // pass through
             throw v;
         } catch (Throwable t) {
             cache.getLoggerService().severe(t, "Failed to write file: " + targetFile.getAbsolutePath());
-            return false;
+            return TriState.FALSE;
         }
     }
 

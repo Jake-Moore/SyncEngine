@@ -191,4 +191,11 @@ public abstract class SyncUpdater<K, X extends Sync<K>> implements Service {
                 false
         );
     }
+
+    /**
+     * @return If we are in NETWORKED mode (with redis and server service available)
+     */
+    public boolean isEnabled() {
+        return EngineSource.getRedisService() != null && EngineSource.getServerService() != null;
+    }
 }

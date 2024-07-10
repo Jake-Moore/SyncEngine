@@ -1,5 +1,6 @@
 package com.kamikazejam.syncengine.base.store;
 
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import lombok.Getter;
@@ -28,7 +29,11 @@ public abstract class SyncStore<K, X extends Sync<K>> implements StoreMethods<K,
     // ---------------------------------------------------------------- //
     protected abstract Optional<X> get(Cache<K, X> cache, @NotNull K key);
 
-    protected abstract boolean save(Cache<K, X> cache, @NotNull X sync);
+    /**
+     * @return if the Sync was saved successfully. (NOT_SET if we didn't have changes to save)
+     */
+    @NotNull
+    protected abstract TriState save(Cache<K, X> cache, @NotNull X sync);
 
     protected abstract boolean has(Cache<K, X> cache, @NotNull K key);
 
@@ -49,7 +54,7 @@ public abstract class SyncStore<K, X extends Sync<K>> implements StoreMethods<K,
     }
 
     @Override
-    public boolean save(@NotNull X sync) {
+    public @NotNull TriState save(@NotNull X sync) {
         return this.save(this.cache, sync);
     }
 

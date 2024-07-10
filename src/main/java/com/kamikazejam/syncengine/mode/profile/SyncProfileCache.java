@@ -3,6 +3,7 @@ package com.kamikazejam.syncengine.mode.profile;
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.util.KUtil;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.SyncCache;
@@ -324,14 +325,15 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
 
     private boolean saveToDatabase(@NotNull X sync) {
         Preconditions.checkNotNull(sync, "Cannot save a null Sync (saveMongo)");
-        boolean db = databaseStore.save(sync);
-        if (db) {
+        TriState state = databaseStore.save(sync);
+        if (state != TriState.FALSE) {
             sync.setSaveFailed(false);
             sync.setLastSaveTimestamp(System.currentTimeMillis());
+            return true;
         } else {
             sync.setSaveFailed(true);
+            return false;
         }
-        return db;
     }
 
     @Override

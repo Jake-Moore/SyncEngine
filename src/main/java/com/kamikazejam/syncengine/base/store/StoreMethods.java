@@ -1,5 +1,6 @@
 package com.kamikazejam.syncengine.base.store;
 
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.base.Sync;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -16,8 +17,10 @@ public interface StoreMethods<K, X extends Sync> {
 
     /**
      * Save a Sync to this store.
+     * @return if the Sync was saved successfully. (NOT_SET if we didn't have changes to save)
      */
-    boolean save(@NotNull X sync);
+    @NotNull
+    TriState save(@NotNull X sync);
 
     /**
      * Check if a Sync is stored in this store.

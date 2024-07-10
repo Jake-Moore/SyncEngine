@@ -2,6 +2,7 @@ package com.kamikazejam.syncengine.base;
 
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.util.KUtil;
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.SyncRegistration;
@@ -149,6 +150,11 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 
     @Override
     public boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async) {
+        if (!getUpdater().isEnabled()) {
+            // Do nothing if the updater is not enabled (STANDALONE mode)
+            return true;
+        }
+
         Preconditions.checkNotNull(sync, "Sync cannot be null for pushUpdate");
         loggerService.debug("PUSH " + keyToString(sync.getId()) + " (v" + sync.getVersion() + "): Force=" + forceLoad);
         return getUpdater().pushUpdate(sync, forceLoad, async);
@@ -204,13 +210,14 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         }
 
         this.cache(sync);
-        boolean mongo = getDatabaseStore().save(sync);
-        if (!mongo) {
+        TriState state = getDatabaseStore().save(sync);
+        if (state == TriState.FALSE) {
             loggerService.info("Failed to save Sync " + keyToString(sync.getId()));
+            return false;
         }
 
         // Push update so other servers can load the new data
-        if (mongo) {
+        if (state == TriState.TRUE) {
             // Try async, but if we're not allowed to create an async task, just do it sync
             try {
                 pushUpdate(sync, true, true);
@@ -218,8 +225,8 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
                 pushUpdate(sync, true, false);
             }
         }
-
-        return mongo;
+        // NOT_SET is considered a success too
+        return true;
     }
 
     @Override

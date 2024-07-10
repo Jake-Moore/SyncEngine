@@ -1,5 +1,6 @@
 package com.kamikazejam.syncengine.connections.storage;
 
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.Sync;
@@ -23,9 +24,10 @@ public abstract class StorageService extends LoggerService implements Service {
      * Implementations of this class should handle optimistic versioning and throw errors accordingly.
      *
      * @throws VersionMismatchException if
-     * @return if the Sync was saved successfully.
+     * @return if the Sync was saved successfully. (NOT_SET if we didn't have changes to save)
      */
-    public abstract <K, X extends Sync<K>> boolean save(Cache<K, X> cache, X sync) throws VersionMismatchException;
+    @NotNull
+    public abstract <K, X extends Sync<K>> TriState save(Cache<K, X> cache, X sync) throws VersionMismatchException;
 
     /**
      * Retrieve a Sync from this store. Requires the cache to fetch it from.

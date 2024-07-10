@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.base.store;
 
 import com.google.common.base.Preconditions;
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.base.Sync;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -26,10 +27,10 @@ public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K
     }
 
     @Override
-    public boolean save(@NotNull X sync) {
+    public @NotNull TriState save(@NotNull X sync) {
         // If not called already, call initialized (since we're caching it)
         this.localCache.put(sync.getId(), sync);
-        return true;
+        return TriState.TRUE;
     }
 
     @Override

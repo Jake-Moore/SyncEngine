@@ -1,5 +1,6 @@
 package com.kamikazejam.syncengine.base.store;
 
+import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
@@ -64,27 +65,27 @@ public abstract class StoreDatabase<K, X extends Sync<K>> extends SyncStore<K, X
     }
 
     @Override
-    protected boolean save(Cache<K, X> cache, @NotNull X sync) {
+    protected @NotNull TriState save(Cache<K, X> cache, @NotNull X sync) {
         // All saves to Database Storage run through here
 
         try {
-            boolean b = storageService.save(cache, sync);
+            TriState state = storageService.save(cache, sync);
             // DB has been updated, we should update the cache copy
-            if (b) {
+            if (state != TriState.FALSE) {
                 sync.cacheCopy();
             }
-            return b;
+            return state;
         }catch (VersionMismatchException ex) {
             // Handle VersionMismatchException
             @NotNull X updatedSync = this.callVersionMismatch(cache, sync, ex);
             // Save our new Sync version
-            boolean b = this.save(cache, updatedSync);
-            if (b) {
+            TriState state = this.save(cache, updatedSync);
+            if (state != TriState.FALSE) {
                 // If saved properly, update our local object
                 cache.updateSyncFromNewer(sync, updatedSync);
                 sync.cacheCopy(); // need to call this again since data changed
             }
-            return b;
+            return state;
         }
     }
 
