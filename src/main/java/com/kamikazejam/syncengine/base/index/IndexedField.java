@@ -6,6 +6,9 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * All IndexFields are assumed to be unique (only have one Sync with that value)
+ */
 @Getter @SuppressWarnings("unused")
 public abstract class IndexedField<X extends Sync<?>, T> {
     private final @NotNull Cache<?, X> cache;

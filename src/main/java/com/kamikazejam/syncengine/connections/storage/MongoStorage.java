@@ -16,10 +16,12 @@ import com.mongodb.*;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Projections;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.bson.Document;
 import org.bson.UuidRepresentation;
 import org.bson.conversions.Bson;
 import org.bukkit.plugin.Plugin;
@@ -340,33 +342,6 @@ public class MongoStorage extends StorageService {
         return false;
     }
 
-    // Kept for reference when versioning is added back
-//    private <K, X extends Sync<K>> boolean handleVersionMismatchException(VersionMismatchException ex, Cache<K, X> cache, X sync) {
-//        String localJson = ProfileHandshakeService.toJson(cache, sync);
-//        String localErr = "Local Object: " + localJson;
-//
-//        AtomicReference<String> remoteErr = new AtomicReference<>("Remote Object: null");
-//        cache.get(sync.getId()).ifPresent(remote -> {
-//            String remoteJson = ProfileHandshakeService.toJson(cache, remote);
-//            remoteErr.set("Remote Object: " + remoteJson);
-//
-//            // Update our local copy, since this error means it's out of date, and our logging already fetched remote
-//            cache.updateSyncFromNewer(sync, remote);
-//        });
-//
-//        // Ignore VersionMismatchException from IdProfile, since we don't have a good way of handling
-//        //   Swapping version switching, and saving on quit while swapping causes this exception
-//        // if (sync instanceof IdProfile) { return true; }
-//
-//        String err = "Versioning error saving Object to Mongo Layer: " + sync.getIdentifier() + " (Version Mismatch)"
-//                        + "\n" + localErr
-//                        + "\n" + remoteErr.get();
-//
-//        // Log debug if we couldn't save the object due to a versioning error (shouldn't happen, but log it in case)
-//        cache.getLoggerService().info(ex,  err);
-//        return false;
-//    }
-
 
     // ------------------------------------------------- //
     //                     Indexing                      //
@@ -374,7 +349,10 @@ public class MongoStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>, T> void registerIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index) {
-        // TODO register with mongo
+        getJackson(cache).createIndex(
+                new Document(index.getName(), 1),
+                new IndexOptions().unique(true)
+        );
     }
     @Override
     public <K, X extends Sync<K>> void cacheIndexes(@NotNull SyncCache<K, X> cache, @NotNull X sync, boolean updateFile) {
@@ -386,7 +364,13 @@ public class MongoStorage extends StorageService {
     }
     @Override
     public <K, X extends Sync<K>, T> @Nullable K getSyncIdByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value) {
-        // TODO fetch with mongo
-        return null;
+        // Fetch an object with the given index value, projecting only the ID and the index field
+        Bson query = Filters.eq(index.getName(), value);
+        @Nullable X sync = getJackson(cache).find(query).projection(Projections.include(ID_FIELD, index.getName())).first();
+        // Ensure index value equality
+        if (sync != null && !index.equals(index.getValue(sync), value)) {
+            return null;
+        }
+        return sync == null ? null : sync.getId();
     }
 }

@@ -258,7 +258,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
 
         // 3. -> Obtain the Profile by its ID
         Optional<X> o = this.get(syncId);
-        if (o.isPresent() && !Objects.equals(field.getValue(o.get()), value)) {
+        if (o.isPresent() && !field.equals(value, field.getValue(o.get()))) {
             // This can happen if:
             //    The local copy had its field changed
             //    and those changes were not saved to DB or Index Cache

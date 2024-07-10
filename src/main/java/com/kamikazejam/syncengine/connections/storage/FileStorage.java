@@ -223,8 +223,6 @@ public class FileStorage extends StorageService {
     // ------------------------------------------------- //
     //                     Indexing                      //
     // ------------------------------------------------- //
-    // TODO (should we cache indexes on load from database too? - probably)
-    
     //  Map<CacheName,   List<IndexedField>  >
     protected final Map<String, List<IndexedField<?, ?>>> cacheIndexes = new HashMap<>();
     //  Map<CacheName,   Map<FieldName,   Map<FieldValue, SyncKey>   >   >
@@ -255,6 +253,7 @@ public class FileStorage extends StorageService {
                 // Only scan for mappings pointing at this Sync
                 String k1 = cache.keyToString((K) entry.getValue());
                 String k2 = cache.keyToString(sync.getId());
+                // Objects.equals valid for Strings
                 if (!Objects.equals(k1, k2)) { continue; }
 
                 toRemove.add(entry.getKey());
@@ -272,6 +271,7 @@ public class FileStorage extends StorageService {
             // Cache this field's value mapped to our Sync
             @Nullable K old = (K) indexCache.put(value, sync.getId());
 
+            // Objects.equals valid for Strings
             if (old != null && !Objects.equals(cache.keyToString(old), cache.keyToString(sync.getId()))) {
                 cache.getLoggerService().severe("Duplicate index value for field " + index.getName() + " in cache " + cache.getName() + " Previous Sync Id: " + old + " New Sync Id: " + sync.getId());
             }

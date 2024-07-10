@@ -47,7 +47,7 @@ public class NetworkProfileRedis extends NetworkProfileStore {
         }
 
         // Check 2 - Ping the server and verify they have the player we're looking for
-        // TODO implement
+        // TODO implement .verifyPlayerOrigin
         // EngineSource.getPlayerService().getPublisher().publishIsOnline(uuid);
     }
 
