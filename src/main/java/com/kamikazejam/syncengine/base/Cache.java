@@ -274,6 +274,12 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      */
     @NotNull SyncInstantiator<K, X> getInstantiator();
 
+
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+
     /**
      * Register an index for this cache.
      * @return The registered index (for chaining)
@@ -292,10 +298,5 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     @ApiStatus.Internal
     void saveIndexCache();
 
-    /**
-     * Retrieves an object by the provided index field and its value.
-     */
-    @Nullable
-    <T> X getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value);
 }
 

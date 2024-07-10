@@ -70,6 +70,6 @@ public abstract class StorageService extends LoggerService implements Service {
     public abstract <K, X extends Sync<K>, T> void registerIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index);
     public abstract <K, X extends Sync<K>> void cacheIndexes(@NotNull SyncCache<K, X> cache, @NotNull X sync, boolean updateFile);
     public abstract <K, X extends Sync<K>> void saveIndexCache(@NotNull SyncCache<K, X> cache);
-    public abstract <K, X extends Sync<K>, T> @Nullable X getByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value);
+    public abstract <K, X extends Sync<K>, T> @Nullable K getSyncIdByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value);
 
 }

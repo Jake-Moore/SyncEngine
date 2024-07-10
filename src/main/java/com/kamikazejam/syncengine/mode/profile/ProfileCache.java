@@ -2,6 +2,7 @@ package com.kamikazejam.syncengine.mode.profile;
 
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NonBlocking;
@@ -79,4 +80,14 @@ public interface ProfileCache<X extends SyncProfile> extends Cache<UUID, X> {
 
     void onProfileLeavingGlobal(@NotNull Player player, @NotNull X profile);
 
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+
+    /**
+     * Retrieves an object by the provided index field and its value.
+     */
+    @NotNull
+    <T> CompletableFuture<X> getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value);
 }

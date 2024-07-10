@@ -2,6 +2,7 @@ package com.kamikazejam.syncengine.mode.object;
 
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -48,4 +49,14 @@ public interface ObjectCache<X extends SyncObject> extends Cache<String, X> {
      */
     @NotNull @Blocking
     CacheSaveResult saveAll();
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+
+    /**
+     * Retrieves an object by the provided index field and its value.
+     */
+    @NotNull
+    <T> Optional<X> getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value);
 }

@@ -8,12 +8,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ThreadSafeFileHandler {
-    private static final Map<String, ReentrantReadWriteLock> locks = new HashMap<>();
+    private static final Map<String, ReentrantReadWriteLock> locks = new ConcurrentHashMap<>();
 
     public static @Nullable String readFile(@NotNull Path path) throws IOException {
         ReentrantReadWriteLock.ReadLock lock = getLock(path.toString()).readLock();

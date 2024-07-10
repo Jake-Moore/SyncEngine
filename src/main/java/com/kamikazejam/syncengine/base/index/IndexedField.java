@@ -17,9 +17,5 @@ public abstract class IndexedField<X extends Sync<?>, T> {
 
     public abstract boolean equals(@Nullable T a, @Nullable T b);
 
-    public @Nullable X getSync(@NotNull T value) {
-        return cache.getByIndex(this, value);
-    }
-
     public abstract <K, Y extends Sync<K>> T getValue(Y sync);
 }

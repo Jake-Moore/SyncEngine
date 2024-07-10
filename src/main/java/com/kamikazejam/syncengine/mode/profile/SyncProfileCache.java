@@ -9,6 +9,7 @@ import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
 import com.kamikazejam.syncengine.base.error.CacheLoggerService;
 import com.kamikazejam.syncengine.base.error.LoggerService;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.base.save.ProfileAutoSaveInstantiator;
 import com.kamikazejam.syncengine.base.save.ProfileAutoSaveTask;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
@@ -345,4 +346,28 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
     @Override
     public abstract void onProfileLeavingGlobal(@NotNull Player player, @NotNull X profile);
 
+
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+
+    @Override
+    public <T> @NotNull CompletableFuture<X> getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value) {
+        // 1. -> Check local cache (brute force) - skip offline players (could be outdated/require a handshake)
+        for (X sync : getLocalStore().getAll()) {
+            if (field.equals(field.getValue(sync), value) && sync.isOnline()) {
+                return CompletableFuture.completedFuture(sync);
+            }
+        }
+
+        // 2. -> Check database (uses cache or mongodb)
+        @Nullable UUID syncId = EngineSource.getStorageService().getSyncIdByIndex(this, field, value);
+        if (syncId == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        // 3. -> Obtain the Profile by its ID (allowing Handshakes as needed)
+        return this.get(syncId);
+    }
 }

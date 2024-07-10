@@ -23,9 +23,11 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -364,6 +366,12 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         return instantiator;
     }
 
+
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+
     @Override
     public <T> IndexedField<X, T> registerIndex(@NotNull IndexedField<X, T> field) {
         getLoggerService().debug("Registering index: " + field.getName());
@@ -379,18 +387,5 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     @Override
     public void saveIndexCache() {
         EngineSource.getStorageService().saveIndexCache(this);
-    }
-
-    @Override
-    public <T> @Nullable X getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value) {
-        // 1. -> Check local cache (brute force)
-        for (X sync : getLocalStore().getAll()) {
-            if (field.equals(field.getValue(sync), value)) {
-                return sync;
-            }
-        }
-
-        // 2. -> Check database (uses cache or mongodb)
-        return EngineSource.getStorageService().getByIndex(this, field, value);
     }
 }

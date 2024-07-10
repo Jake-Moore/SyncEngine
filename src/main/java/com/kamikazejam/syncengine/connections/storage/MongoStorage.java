@@ -376,7 +376,7 @@ public class MongoStorage extends StorageService {
         // do nothing -> MongoDB handles this
     }
     @Override
-    public <K, X extends Sync<K>, T> @Nullable X getByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value) {
+    public <K, X extends Sync<K>, T> @Nullable K getSyncIdByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value) {
         // TODO fetch with mongo
         return null;
     }

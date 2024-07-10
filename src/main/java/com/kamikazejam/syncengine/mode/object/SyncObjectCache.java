@@ -1,11 +1,13 @@
 package com.kamikazejam.syncengine.mode.object;
 
 import com.google.common.base.Preconditions;
+import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncRegistration;
 import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
 import com.kamikazejam.syncengine.base.error.CacheLoggerService;
 import com.kamikazejam.syncengine.base.error.LoggerService;
+import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
@@ -234,5 +236,33 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     @Override
     public @NotNull Iterable<String> getIDs() {
         return databaseStore.getKeys();
+    }
+
+
+
+    // ------------------------------------------------- //
+    //                     Indexing                      //
+    // ------------------------------------------------- //
+
+    @Override
+    public <T> @NotNull Optional<X> getByIndex(@NotNull IndexedField<X, T> field, @NotNull T value) {
+        // 1. -> Check local cache (brute force)
+        for (X sync : getLocalStore().getAll()) {
+            if (field.equals(field.getValue(sync), value)) {
+                Bukkit.getLogger().info("Found field: " + field.getName() + " with value: " + value + " in local cache");
+                return Optional.of(sync);
+            }else {
+                Bukkit.getLogger().info("Field: " + field.getName() + " values not match: " + field.getValue(sync) + " != " + value + " in local cache");
+            }
+        }
+
+        // 2. -> Check database (uses cache or mongodb)
+        @Nullable String syncId = EngineSource.getStorageService().getSyncIdByIndex(this, field, value);
+        if (syncId == null) {
+            return Optional.empty();
+        }
+
+        // 3. -> Obtain the Profile by its ID
+        return this.get(syncId);
     }
 }

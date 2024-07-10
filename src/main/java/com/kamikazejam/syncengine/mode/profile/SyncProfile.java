@@ -235,13 +235,23 @@ public abstract class SyncProfile implements Sync<UUID> {
     }
 
     /**
-     * Check if the player behind this Profile is online
+     * Check if the player behind this Profile is online (and valid)
+     * @return Iff the Player is online (LOCALLY) - does not check sync-group
+     */
+    public boolean isOnlineAndValid() {
+        // Fetch the player and check if they're online
+        this.player = Bukkit.getPlayer(this.getUniqueId());
+        return PlayerUtil.isFullyValidPlayer(this.player);
+    }
+
+    /**
+     * Check if the player behind this Profile is online (and valid)
      * @return Iff the Player is online (LOCALLY) - does not check sync-group
      */
     public boolean isOnline() {
         // Fetch the player and check if they're online
         this.player = Bukkit.getPlayer(this.getUniqueId());
-        return PlayerUtil.isFullyValidPlayer(this.player);
+        return this.player != null && this.player.isOnline();
     }
 
 }
