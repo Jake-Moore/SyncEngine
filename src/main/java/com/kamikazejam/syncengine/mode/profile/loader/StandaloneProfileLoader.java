@@ -8,11 +8,13 @@ import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import java.util.Optional;
 
 public class StandaloneProfileLoader {
-    protected static <X extends SyncProfile> Optional<X> loadStandalone(SyncProfileLoader<X> L) {
+
+    protected static <X extends SyncProfile> void loadStandalone(SyncProfileLoader<X> L) {
         // Try loading from local
         Optional<X> localSync = L.cache.getLocalStore().get(L.uuid);
         if (localSync.isPresent()) {
-            return localSync;
+            L.sync = localSync.get();
+            return;
         }
 
         // Try loading from database
@@ -29,7 +31,7 @@ public class StandaloneProfileLoader {
                 L.sync.setLoadingSource("New Profile");
                 L.sync.setCache(L.cache);
                 L.cache.save(L.sync);
-                return Optional.of(L.sync);
+                return;
             }
 
             // Assume some other kind of failure:
@@ -37,7 +39,7 @@ public class StandaloneProfileLoader {
             L.joinDenyReason = StringUtil.t(EngineSource.getConfig().getString("profiles.messages.beforeDbConnection")
                     .replace("{cacheName}", L.cache.getName()));
             L.sync = null;
-            return Optional.empty();
+            return;
         }
 
         // We have a valid sync from Database
@@ -55,7 +57,5 @@ public class StandaloneProfileLoader {
                 L.sync.setUsername(L.username);
             }
         }
-
-        return Optional.of(L.sync);
     }
 }
