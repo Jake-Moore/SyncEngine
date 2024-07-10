@@ -302,6 +302,15 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     }
 
     @Override
+    public void tryAsync(@NotNull Runnable runnable) {
+        try {
+            runAsync(runnable);
+        }catch (IllegalPluginAccessException e) {
+            runnable.run();
+        }
+    }
+
+    @Override
     public void addDepend(@NotNull Cache<?, ?> cache) {
         Preconditions.checkNotNull(cache);
         this.dependingCaches.add(cache.getName());

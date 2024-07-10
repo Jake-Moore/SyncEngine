@@ -20,10 +20,7 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -249,10 +246,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
         // 1. -> Check local cache (brute force)
         for (X sync : getLocalStore().getAll()) {
             if (field.equals(field.getValue(sync), value)) {
-                Bukkit.getLogger().info("Found field: " + field.getName() + " with value: " + value + " in local cache");
                 return Optional.of(sync);
-            }else {
-                Bukkit.getLogger().info("Field: " + field.getName() + " values not match: " + field.getValue(sync) + " != " + value + " in local cache");
             }
         }
 
@@ -263,6 +257,16 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
         }
 
         // 3. -> Obtain the Profile by its ID
-        return this.get(syncId);
+        Optional<X> o = this.get(syncId);
+        if (o.isPresent() && !Objects.equals(field.getValue(o.get()), value)) {
+            // This can happen if:
+            //    The local copy had its field changed
+            //    and those changes were not saved to DB or Index Cache
+            // This is not considered an error, but we should return empty
+            return Optional.empty();
+        }
+
+        // Either the Optional is empty or the Sync has the correct value -> return
+        return o;
     }
 }

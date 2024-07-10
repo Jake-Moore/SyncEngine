@@ -13,7 +13,10 @@ import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
 import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -208,6 +211,13 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      */
     @ApiStatus.Internal
     void runSync(@NotNull Runnable runnable);
+
+    /**
+     * Helper method to use the {@link #getPlugin()} plugin to attempt an Async task
+     * If the plugin is not allowed to run async tasks (like on disable), a sync task will be run instead.
+     */
+    @ApiStatus.Internal
+    void tryAsync(@NotNull Runnable runnable);
 
     /**
      * Get the number of Sync objects currently stored locally in this cache

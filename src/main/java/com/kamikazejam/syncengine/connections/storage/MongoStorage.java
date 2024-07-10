@@ -100,6 +100,10 @@ public class MongoStorage extends StorageService {
         Preconditions.checkNotNull(key);
         try {
             Bson query = Filters.eq(ID_FIELD, cache.keyToString(key));
+            Optional<X> o = Optional.ofNullable(getJackson(cache).findOne(query));
+            // Cache Indexes since we are loading from database
+            o.ifPresent(s -> cache.cacheIndexes(s, true));
+
             return Optional.ofNullable(getJackson(cache).findOne(query));
         } catch (MongoException ex) {
             cache.getLoggerService().info(ex, "MongoDB error getting Object from MongoDB Layer: " + key);
@@ -131,7 +135,7 @@ public class MongoStorage extends StorageService {
             sync.setVersion(sync.getVersion() + 1);
             getJackson(cache).save(sync);
 
-            // Update Indexes
+            // Cache Indexes
             cache.cacheIndexes(sync, true);
             return true;
         } catch (VersionMismatchException v) {
@@ -189,7 +193,12 @@ public class MongoStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>> Iterable<X> getAll(Cache<K, X> cache) {
-        return getJackson(cache).find();
+        Iterator<X> iterator = getJackson(cache).find().iterator();
+        // Make sure to cache indexes when a sync is loaded from the database
+        return () -> new TransformingIterator<>(iterator, x -> {
+            cache.cacheIndexes(x, true);
+            return x;
+        });
     }
 
     @Override

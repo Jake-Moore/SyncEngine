@@ -14,7 +14,6 @@ import com.kamikazejam.syncengine.util.JacksonUtil;
 import com.kamikazejam.syncengine.util.ThreadSafeFileHandler;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -52,7 +51,6 @@ public class FileStorage extends StorageService {
             ThreadSafeFileHandler.writeFile(targetFile.toPath(), JacksonUtil.toJson(sync));
 
             // Cache Indexes
-            Bukkit.getLogger().info("Caching Indexes...");
             cache.cacheIndexes(sync, true);
             return true;
         } catch (VersionMismatchException v) {
@@ -92,7 +90,9 @@ public class FileStorage extends StorageService {
             if (json == null || json.isEmpty()) {
                 return Optional.empty();
             }
-            return Optional.of(JacksonUtil.deserialize(cache.getSyncClass(), json));
+            Optional<X> o = Optional.of(JacksonUtil.deserialize(cache.getSyncClass(), json));
+            o.ifPresent(sync -> cache.cacheIndexes(sync, true));
+            return o;
         } catch (Throwable t) {
             cache.getLoggerService().severe(t, "Failed to read file: " + targetFile.getAbsolutePath());
             return Optional.empty();
@@ -132,7 +132,14 @@ public class FileStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>> Iterable<X> getAll(Cache<K, X> cache) {
-        return new SyncFilesIterable<>(cache, getCacheFolder(cache).toPath());
+        // Create an iterator that reads files as requested
+        Iterator<X> iterator = new SyncFilesIterable<>(cache, getCacheFolder(cache).toPath()).iterator();
+        // Adapt the iterator to peek the values as they are provided
+        return () -> new TransformingIterator<>(iterator, x -> {
+            // Ensure indexes are cached
+            cache.cacheIndexes(x, false);
+            return x;
+        });
     }
 
     @Override
@@ -206,15 +213,18 @@ public class FileStorage extends StorageService {
     private <K, X extends Sync<K>> File getCacheFolder(Cache<K, X> cache) {
         return new File(getDbFolder(cache) + File.separator + cache.getName());
     }
-
     private <K, X extends Sync<K>> File getTargetFile(Cache<K, X> cache, K key) {
         return new File(getCacheFolder(cache), cache.keyToString(key) + ".json");
     }
-
+    private <K, X extends Sync<K>> File getIndexesFolder(Cache<K, X> cache) {
+        return new File(getDbFolder(cache), ".indexes");
+    }
 
     // ------------------------------------------------- //
     //                     Indexing                      //
     // ------------------------------------------------- //
+    // TODO (should we cache indexes on load from database too? - probably)
+    
     //  Map<CacheName,   List<IndexedField>  >
     protected final Map<String, List<IndexedField<?, ?>>> cacheIndexes = new HashMap<>();
     //  Map<CacheName,   Map<FieldName,   Map<FieldValue, SyncKey>   >   >
@@ -229,8 +239,6 @@ public class FileStorage extends StorageService {
     @Override
     @SuppressWarnings("unchecked")
     public <K, X extends Sync<K>> void cacheIndexes(@NotNull SyncCache<K, X> cache, @NotNull X sync, boolean save) {
-        Bukkit.getLogger().info("FileStorage - Caching Indexes (save:" + save + ")...");
-
         // Step 0 - Ensure maps are populated
         List<IndexedField<?, ?>> cacheIndexes = this.cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
         Map<String, Map<Object, Object>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
@@ -270,31 +278,29 @@ public class FileStorage extends StorageService {
         }
 
         if (save) {
-            this.saveIndexCache(cache);
+            cache.tryAsync(() -> saveIndexCache(cache));
         }
     }
 
     @SneakyThrows
     @Override
     public <K, X extends Sync<K>> void saveIndexCache(@NotNull SyncCache<K, X> cache) {
-        Bukkit.getLogger().info("\tSaving Index Cache...");
+        File indexesFolder = new File(getIndexesFolder(cache) + File.separator + cache.getName());
+        Map<String, JsonObject> fieldJsons = serializeJsonCache(cache);
 
-        File indexFile = new File(getDbFolder(cache), cache.getName() + "_indexes.json");
-        JsonObject json = serializeJsonCache(cache);
-
-        Bukkit.getLogger().info("\tJSON:");
-        Bukkit.getLogger().info(json.toString());
-
-        // Write to the file
-        ThreadSafeFileHandler.writeFile(indexFile.toPath(), json.toString());
+        // Write each index to its own file
+        for (Map.Entry<String, JsonObject> entry : fieldJsons.entrySet()) {
+            File indexFile = new File(indexesFolder, entry.getKey() + ".json");
+            ThreadSafeFileHandler.writeFile(indexFile.toPath(), entry.getValue().toString());
+        }
     }
 
-    private <K, X extends Sync<K>> @NotNull JsonObject serializeJsonCache(@NotNull SyncCache<K, X> cache) {
+    private <K, X extends Sync<K>> @NotNull Map<String, JsonObject> serializeJsonCache(@NotNull SyncCache<K, X> cache) {
+        Map<String, JsonObject> fieldJsons = new HashMap<>();
+
         // Step 0 - Ensure maps are populated
         List<IndexedField<?, ?>> cacheIndexes = this.cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
         Map<String, Map<Object, Object>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
-
-        JsonObject json = new JsonObject();
 
         // Loop through all the registered indexes to fetch the mappings
         for (IndexedField<?, ?> indexed : cacheIndexes) {
@@ -306,9 +312,10 @@ public class FileStorage extends StorageService {
             for (Map.Entry<Object, Object> entry : indexCache.entrySet()) {
                 indexJson.addProperty(entry.getKey().toString(), entry.getValue().toString());
             }
-            json.add(indexed.getName(), indexJson);
+            fieldJsons.put(indexed.getName(), indexJson);
         }
-        return json;
+
+        return fieldJsons;
     }
 
     @Override

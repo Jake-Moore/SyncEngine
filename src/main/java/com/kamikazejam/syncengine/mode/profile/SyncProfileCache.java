@@ -367,7 +367,29 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
             return CompletableFuture.completedFuture(null);
         }
 
-        // 3. -> Obtain the Profile by its ID (allowing Handshakes as needed)
-        return this.get(syncId);
+        // 3. -> Obtain the Profile by its ID
+        CompletableFuture<X> o = this.get(syncId);
+
+        // 4. Adapt this future so we can peek its contents
+        CompletableFuture<X> future = new CompletableFuture<>();
+        o.whenComplete((s, t) -> {
+            if (t != null) {
+                future.completeExceptionally(t);
+                return;
+            }
+
+            // If we have a SyncProfile and the field matches the value, then we have our result
+            if (s != null && field.equals(field.getValue(s), value)) {
+                future.complete(s);
+            } else {
+                // Otherwise something changed in the Sync and we should not return it
+                // This can happen if:
+                //    The local copy had its field changed
+                //    and those changes were not saved to DB or Index Cache
+                // This is not considered an error
+                future.complete(null);
+            }
+        });
+        return future;
     }
 }
