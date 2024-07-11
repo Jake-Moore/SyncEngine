@@ -21,4 +21,8 @@ public abstract class IndexedField<X extends Sync<?>, T> {
     public abstract boolean equals(@Nullable T a, @Nullable T b);
 
     public abstract <K, Y extends Sync<K>> T getValue(Y sync);
+
+    public abstract @NotNull String toString(@NotNull Object value);
+
+    public abstract @NotNull T fromString(@NotNull String value);
 }

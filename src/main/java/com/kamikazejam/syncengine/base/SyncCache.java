@@ -62,6 +62,8 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         this.plugin = registration.getPlugin();
         this.syncPlugin = EngineSource.get();
         this.loggerService = logger.instantiate(this);
+        // Make sure to load the Index Cache from disk when this cache is created
+        this.saveIndexCache();
     }
 
     /**
