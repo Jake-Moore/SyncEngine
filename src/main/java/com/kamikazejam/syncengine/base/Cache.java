@@ -300,6 +300,12 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     void cacheIndexes(@NotNull X sync, boolean save);
 
     /**
+     * Updates the indexes cache with the provided Sync object.
+     */
+    @ApiStatus.Internal
+    void invalidateIndexes(@NotNull K syncId, boolean save);
+
+    /**
      * Saves the index cache to storage.
      */
     @ApiStatus.Internal

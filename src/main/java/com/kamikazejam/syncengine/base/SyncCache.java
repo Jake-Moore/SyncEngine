@@ -273,13 +273,16 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         Preconditions.checkNotNull(key);
         getLocalStore().remove(key);
         getDatabaseStore().remove(key);
+        this.invalidateIndexes(key, true);
     }
 
     @Override
     public void delete(@NotNull X sync) {
         Preconditions.checkNotNull(sync);
+        K id = sync.getId();
         getLocalStore().remove(sync);
         getDatabaseStore().remove(sync);
+        this.invalidateIndexes(id, true);
     }
 
     @Override
@@ -401,6 +404,11 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     @Override
     public void cacheIndexes(@NotNull X sync, boolean save) {
         EngineSource.getStorageService().cacheIndexes(this, sync, save);
+    }
+
+    @Override
+    public void invalidateIndexes(@NotNull K syncId, boolean save) {
+        EngineSource.getStorageService().invalidateIndexes(this, syncId, save);
     }
 
     @Override

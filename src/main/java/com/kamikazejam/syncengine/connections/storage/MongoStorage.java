@@ -380,4 +380,9 @@ public class MongoStorage extends StorageService {
         }
         return sync == null ? null : sync.getId();
     }
+
+    @Override
+    public <K, X extends Sync<K>> void invalidateIndexes(@NotNull SyncCache<K, X> cache, @NotNull K syncId, boolean updateFile) {
+        // do nothing -> MongoDB handles this
+    }
 }

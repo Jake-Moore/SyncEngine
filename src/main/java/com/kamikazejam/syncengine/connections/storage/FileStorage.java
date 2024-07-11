@@ -258,24 +258,7 @@ public class FileStorage extends StorageService {
         Map<String, Map<String, String>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
 
         // Step 1 - Remove any data mapped to this sync (will be put back if still valid)
-        for (IndexedField<?, ?> index : cacheIndexes) {
-            // Grab the cache for this field name
-            Map<String, String> indexCache = indexMappings.get(index.getName());
-            if (indexCache == null) { continue; }
-
-            // Compile a list of index mappings to remove
-            List<String> toRemove = new ArrayList<>();
-            for (Map.Entry<String, String> entry : indexCache.entrySet()) {
-                // Only scan for mappings pointing at this Sync
-                String k1 = entry.getValue();
-                String k2 = cache.keyToString(sync.getId());
-                // Objects.equals valid for Strings
-                if (!Objects.equals(k1, k2)) { continue; }
-
-                toRemove.add(entry.getKey());
-            }
-            toRemove.forEach(indexCache::remove);
-        }
+        this.invalidateIndexes(cache, sync.getId(), false);
 
         // Step 2 - Update the cache with current field data (update field -> Sync mapping)
         for (IndexedField<?, ?> index : cacheIndexes) {
@@ -369,6 +352,37 @@ public class FileStorage extends StorageService {
             }
 
             indexCache.put(entry.getKey(), value);
+        }
+    }
+
+    @Override
+    public <K, X extends Sync<K>> void invalidateIndexes(@NotNull SyncCache<K, X> cache, @NotNull K syncId, boolean updateFile) {
+        // Ensure maps are populated
+        List<IndexedField<?, ?>> cacheIndexes = this.cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
+        Map<String, Map<String, String>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
+
+        // Remove any data mapped to this sync
+        for (IndexedField<?, ?> index : cacheIndexes) {
+            // Grab the cache for this field name
+            Map<String, String> indexCache = indexMappings.get(index.getName());
+            if (indexCache == null) { continue; }
+
+            // Compile a list of index mappings to remove
+            List<String> toRemove = new ArrayList<>();
+            for (Map.Entry<String, String> entry : indexCache.entrySet()) {
+                // Only scan for mappings pointing at this Sync
+                String k1 = entry.getValue();
+                String k2 = cache.keyToString(syncId);
+                // Objects.equals valid for Strings
+                if (!Objects.equals(k1, k2)) { continue; }
+
+                toRemove.add(entry.getKey());
+            }
+            toRemove.forEach(indexCache::remove);
+        }
+
+        if (updateFile) {
+            cache.tryAsync(() -> saveIndexCache(cache));
         }
     }
 }
