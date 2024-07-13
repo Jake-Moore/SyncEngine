@@ -195,12 +195,18 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     public final void updateSyncFromNewer(@NotNull X sync, @NotNull X update) {
         Preconditions.checkNotNull(sync);
         Preconditions.checkNotNull(update);
-        getLoggerService().debug("UPDATE Sync " + keyToString(sync.getId()) + " from v" + sync.getVersion() + " to v" + update.getVersion());
 
         // Load the version from the update sync (IFF it's newer)
         if (update.getVersion() < sync.getVersion()) {
             throw new IllegalStateException("[" + getName() + "] Update Sync is OLDER? Loading: " + keyToString(sync.getId()) + " from v" + sync.getVersion() + " to v" + update.getVersion());
         }
+        // Skip the load if we have the same version
+        //   There is a possibility of local changes, and we don't want to override those
+        //   with what appears to be the same data that loaded the object
+        if (update.getVersion() == sync.getVersion()) {
+            return;
+        }
+
         update.copyInto(sync);
         sync.setVersion(update.getVersion());
     }
@@ -249,7 +255,11 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         Preconditions.checkNotNull(sync);
         Optional<X> o = getLocalStore().get(sync.getId());
         if (o.isPresent()) {
-            updateSyncFromNewer(o.get(), sync);
+            // If the objects are different -> update the one in the cache
+            //   Note: this is not an equality check, this is a reference check (as intended)
+            if (o.get() != sync) {
+                updateSyncFromNewer(o.get(), sync);
+            }
         } else {
             getLocalStore().save(sync);
             this.getLoggerService().debug("Cached sync " + sync.getId());
