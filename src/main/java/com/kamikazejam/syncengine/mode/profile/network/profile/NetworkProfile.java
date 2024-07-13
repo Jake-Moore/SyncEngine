@@ -2,6 +2,7 @@ package com.kamikazejam.syncengine.mode.profile.network.profile;
 
 import com.kamikazejam.kamicommon.json.JSONObject;
 import com.kamikazejam.kamicommon.util.Preconditions;
+import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -18,7 +20,7 @@ import java.util.UUID;
  */
 @Data
 @Accessors(chain = true)
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "BooleanMethodIsAlwaysInverted"})
 public class NetworkProfile {
 
     @Setter
@@ -28,7 +30,7 @@ public class NetworkProfile {
     private long lastSaved = System.currentTimeMillis();
     @Getter(AccessLevel.NONE)
     private @NotNull UUID uuid;
-    private @NotNull String username;
+    private @Nullable String username;
 
     private String lastSeenServer;
     private long lastSeen = 0L;
@@ -38,6 +40,12 @@ public class NetworkProfile {
 
     // For Jackson, must have a no-arg constructor
     public NetworkProfile() {}
+
+    public NetworkProfile(@NotNull UUID uuid) {
+        Preconditions.checkNotNull(uuid, "UUID cannot be null");
+        this.uuid = uuid;
+        this.username = null;
+    }
 
     public NetworkProfile(@NotNull UUID uuid, @NotNull String username) {
         Preconditions.checkNotNull(uuid, "UUID cannot be null");
@@ -87,6 +95,26 @@ public class NetworkProfile {
     public void setUsername(@NotNull String username) {
         Preconditions.checkNotNull(username);
         this.username = username;
+    }
+
+    public @NotNull String getUsername() {
+        if (username == null) {
+            username = IdUtilLocal.getName(uuid);
+        }
+        if (username == null) {
+            throw new IllegalStateException("[NetworkProfile] Username is null for UUID: " + uuid);
+        }
+        return username;
+    }
+
+    public @NotNull String getUsername(@NotNull String def) {
+        if (username == null) {
+            username = IdUtilLocal.getName(uuid);
+        }
+        if (username == null) {
+            return def;
+        }
+        return username;
     }
 
     public static NetworkProfile deserialize(@NotNull String json) {

@@ -253,10 +253,10 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     NetworkProfileStore getNetworkStore();
 
     @NotNull
-    Optional<NetworkProfile> getNetworked(@NotNull UUID key);
+    NetworkProfile getNetworked(@NotNull UUID key);
 
     @NotNull
-    <T extends SyncProfile> Optional<NetworkProfile> getNetworked(@NotNull T sync);
+    <T extends SyncProfile> NetworkProfile getNetworked(@NotNull T sync);
 
     /**
      * Internal method used by SyncEngine to forcefully update a local instance of a Sync object with a newer one,

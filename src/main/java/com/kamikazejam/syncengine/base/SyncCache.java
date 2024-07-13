@@ -383,15 +383,15 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 
     @Override
     @NotNull
-    public final <T extends SyncProfile> Optional<NetworkProfile> getNetworked(@NotNull T sync) {
+    public final <T extends SyncProfile> NetworkProfile getNetworked(@NotNull T sync) {
         Preconditions.checkNotNull(sync);
         return getNetworked(sync.getUniqueId());
     }
 
     @Override
     @NotNull
-    public final Optional<NetworkProfile> getNetworked(@NotNull UUID key) {
-        return getNetworkStore().get(key);
+    public final NetworkProfile getNetworked(@NotNull UUID key) {
+        return getNetworkStore().getOrCreate(key);
     }
 
     @Override

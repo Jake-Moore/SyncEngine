@@ -9,6 +9,7 @@ import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -75,8 +76,8 @@ public class NetworkProfileRedis extends NetworkProfileStore {
         }
     }
 
-    @Override
-    public @NotNull Optional<NetworkProfile> get(@NotNull UUID uuid) {
+    @Override @ApiStatus.Internal
+    protected @NotNull Optional<NetworkProfile> get(@NotNull UUID uuid) {
         Preconditions.checkNotNull(uuid, "UUID cannot be null");
 
         final String hashKey = getHashKey();
@@ -89,7 +90,7 @@ public class NetworkProfileRedis extends NetworkProfileStore {
             if (getRedis().sync().hexists(hashKey, keyString)) {
                 final String json = getRedis().sync().hget(hashKey, keyString);
                 if (json != null && !json.isEmpty()) {
-                    return Optional.of(createNetworkProfile(json));
+                    return Optional.of(deserializeNetworkProfile(json));
                 } else {
                     return Optional.empty();
                 }
@@ -110,30 +111,13 @@ public class NetworkProfileRedis extends NetworkProfileStore {
         try {
             return getRedis().sync().hgetall(hashKey).values().stream()
                     .filter(json -> json != null && !json.isEmpty())
-                    .map(this::createNetworkProfile)
+                    .map(this::deserializeNetworkProfile)
                     .filter(profile -> !online || profile.isOnline())
                     .collect(Collectors.toList());
         } catch (Exception ex) {
             info(ex, "Error getting all network profiles from Redis Network Service");
             return Collections.emptyList();
         }
-    }
-
-    @Override
-    public boolean has(@NotNull UUID uuid) {
-        Preconditions.checkNotNull(uuid, "UUID cannot be null");
-
-        final String hashKey = getHashKey();
-        final String keyString = getKeyString(uuid);
-        Preconditions.checkNotNull(hashKey, "Hash key cannot be null");
-        Preconditions.checkNotNull(keyString, "Key cannot be null");
-
-        try {
-            return getRedis().sync().hexists(hashKey, keyString);
-        } catch (Exception ex) {
-            info("Error checking if hexists in Redis Network Service for UUID:" + keyString);
-        }
-        return false;
     }
 
 
@@ -146,7 +130,7 @@ public class NetworkProfileRedis extends NetworkProfileStore {
         return redis.getApi().getConnection();
     }
     @SneakyThrows
-    private @NotNull NetworkProfile createNetworkProfile(@NotNull String json) {
+    private @NotNull NetworkProfile deserializeNetworkProfile(@NotNull String json) {
         NetworkProfile profile = JacksonUtil.getMapper().readValue(json, NetworkProfile.class);
         profile.setThisServerName(getThisServerName());
         return profile;

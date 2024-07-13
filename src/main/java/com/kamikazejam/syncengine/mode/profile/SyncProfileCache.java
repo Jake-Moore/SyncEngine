@@ -289,14 +289,9 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
         cache(sync);
 
         // Require a NetworkProfile for saving in NETWORK_NODE mode
-        Optional<NetworkProfile> onp = EngineSource.getNetworkStore().get(sync.getUniqueId());
-        if (onp.isEmpty()) {
-            loggerService.info("Failed to save profile " + sync.getUniqueId() + ": Network Profile doesn't exist (should have been created)");
-            return false;
-        }
+        NetworkProfile np = EngineSource.getNetworkStore().getOrCreate(sync);
 
         // If the NetworkProfile is online on this server, then we can save to mongo and update the NetworkProfile
-        NetworkProfile np = onp.get();
         boolean sameSyncServerId = EngineSource.getSyncServerId().equalsIgnoreCase(np.getLastSeenServer());
         if (sameSyncServerId) {
             np.markSaved();

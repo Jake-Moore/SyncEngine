@@ -24,6 +24,7 @@ public class QuitMethods {
             profile.uninitializePlayer();
 
             // Save the profile
+            cache.getLoggerService().debug("Saving player " + player.getName() + " on logout (standalone)");
             if (saveAsync && EngineSource.get().isEnabled()) {
                 cache.save(profile);
             } else {

@@ -11,6 +11,7 @@ import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -41,11 +42,8 @@ public abstract class NetworkProfileStore extends LoggerService implements Servi
      */
     public abstract boolean save(@NotNull NetworkProfile profile);
 
-    /**
-     * Retrieves a NetworkProfile by UUID
-     */
-    @NotNull
-    public abstract Optional<NetworkProfile> get(@NotNull UUID uuid);
+    @ApiStatus.Internal
+    protected abstract Optional<NetworkProfile> get(@NotNull UUID uuid);
 
     /**
      * Retrieves all NetworkProfiles in this store
@@ -54,10 +52,6 @@ public abstract class NetworkProfileStore extends LoggerService implements Servi
     @NotNull
     public abstract List<NetworkProfile> getAll(boolean onlyOnline);
 
-    /**
-     * Checks if the store has a NetworkProfile with the given UUID
-     */
-    public abstract boolean has(@NotNull UUID uuid);
 
 
     // ----------------------------------------------------- //
@@ -77,10 +71,9 @@ public abstract class NetworkProfileStore extends LoggerService implements Servi
         // If there are any players online (won't be the case for server shutdown), then set them as offline
         for (Player player : Bukkit.getOnlinePlayers()) {
             // Set their NetworkProfile to offline
-            this.get(player.getUniqueId()).ifPresent(networkProfile -> {
-                networkProfile.markUnloaded(false);
-                this.save(networkProfile);
-            });
+            NetworkProfile np = this.getOrCreate(player);
+            np.markUnloaded(false);
+            this.save(np);
         }
 
         return true;
@@ -98,23 +91,34 @@ public abstract class NetworkProfileStore extends LoggerService implements Servi
      * Creates a new NetworkProfile with the given UUID and username
      * Does NOT save the new NetworkProfile
      */
-    public final @NotNull NetworkProfile create(@NotNull UUID uuid, @NotNull String username) {
+    protected final @NotNull NetworkProfile create(@NotNull UUID uuid, @NotNull String username) {
         NetworkProfile np = new NetworkProfile(uuid, username);
         np.setThisServerName(getThisServerName());
         np.setUUID(uuid);
         np.setUsername(username);
         return np;
     }
-
     /**
-     * Creates a new NetworkProfile from a Sync
+     * Creates a new NetworkProfile with the given UUID
      * Does NOT save the new NetworkProfile
      */
-    public final <X extends SyncProfile> @NotNull NetworkProfile create(@NotNull X sync) {
-        NetworkProfile np = new NetworkProfile();
+    protected final @NotNull NetworkProfile create(@NotNull UUID uuid) {
+        NetworkProfile np = new NetworkProfile(uuid);
         np.setThisServerName(getThisServerName());
-        np.setUUID(sync.getUniqueId());
-        sync.getUsername().ifPresent(np::setUsername);
+        np.setUUID(uuid);
+        return np;
+    }
+
+    /**
+     * Gets a NetworkProfile by UUID
+     */
+    @NotNull
+    public final NetworkProfile getOrCreate(@NotNull UUID uuid) {
+        Preconditions.checkNotNull(uuid, "uuid cannot be null");
+        Optional<NetworkProfile> o = get(uuid);
+        NetworkProfile np = o.orElseGet(() -> create(uuid));
+        // Ensure the NetworkProfile is saved
+        this.save(np);
         return np;
     }
 
@@ -126,7 +130,10 @@ public abstract class NetworkProfileStore extends LoggerService implements Servi
         Preconditions.checkNotNull(uuid, "uuid cannot be null");
         Optional<NetworkProfile> o = get(uuid);
         o.ifPresent(p -> p.setUsername(username));
-        return o.orElseGet(() -> create(uuid, username));
+        NetworkProfile np = o.orElseGet(() -> create(uuid, username));
+        // Ensure the NetworkProfile is saved
+        this.save(np);
+        return np;
     }
 
     @NotNull
@@ -140,7 +147,17 @@ public abstract class NetworkProfileStore extends LoggerService implements Servi
         Preconditions.checkNotNull(sync, "Sync cannot be null");
         Optional<NetworkProfile> o = get(sync.getUniqueId());
         o.ifPresent(p -> sync.getUsername().ifPresent(p::setUsername));
-        return o.orElseGet(() -> create(sync));
+        NetworkProfile np = o.orElseGet(() -> {
+            // Creation Logic
+            NetworkProfile newNp = new NetworkProfile();
+            newNp.setThisServerName(getThisServerName());
+            newNp.setUUID(sync.getUniqueId());
+            sync.getUsername().ifPresent(newNp::setUsername);
+            return newNp;
+        });
+        // Ensure the NetworkProfile is saved
+        this.save(np);
+        return np;
     }
 
     public final @NotNull String getHashKey() {

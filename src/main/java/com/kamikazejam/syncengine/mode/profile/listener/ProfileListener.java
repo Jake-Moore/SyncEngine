@@ -196,7 +196,7 @@ public class ProfileListener implements Listener {
     }
 
     public static final Cache<UUID, Long> swapMap = CacheBuilder.newBuilder().expireAfterWrite(10, TimeUnit.SECONDS).build();
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.MONITOR) // Run LAST
     public void onProfileQuit(final PlayerQuitEvent event) {
         final Player player = event.getPlayer();
         // Best way to do this for now, is to do this sync and in order of reverse depends

@@ -4,6 +4,7 @@ import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -42,20 +43,15 @@ public class NetworkProfileLocal extends NetworkProfileStore {
     }
 
     @Override
-    public @NotNull Optional<NetworkProfile> get(@NotNull UUID uuid) {
-        return Optional.ofNullable(localCache.get(uuid));
-    }
-
-    @Override
     public @NotNull List<NetworkProfile> getAll(boolean onlyOnline) {
         return localCache.values().stream()
                 .filter(profile -> !onlyOnline || profile.isOnline())
                 .toList();
     }
 
-    @Override
-    public boolean has(@NotNull UUID uuid) {
-        return localCache.containsKey(uuid);
+    @Override @ApiStatus.Internal
+    protected Optional<NetworkProfile> get(@NotNull UUID uuid) {
+        return Optional.ofNullable(localCache.get(uuid));
     }
 
 
