@@ -195,6 +195,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     public final void updateSyncFromNewer(@NotNull X sync, @NotNull X update) {
         Preconditions.checkNotNull(sync);
         Preconditions.checkNotNull(update);
+        getLoggerService().debug("UPDATE Sync " + keyToString(sync.getId()) + " from v" + sync.getVersion() + " to v" + update.getVersion());
 
         // Load the version from the update sync (IFF it's newer)
         if (update.getVersion() < sync.getVersion()) {
