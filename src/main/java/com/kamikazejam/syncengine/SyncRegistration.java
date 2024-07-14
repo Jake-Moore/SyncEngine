@@ -40,6 +40,7 @@ public class SyncRegistration {
             constructor.setAccessible(true);
             SyncCache<?,?> cache = constructor.newInstance(this);
             this.caches.add(cache);
+            EngineSource.getStorageService().onRegisteredCache(cache);
             cache.getLoggerService().info("Cache Registered.");
         } catch (NoSuchMethodException ex1) {
             EngineSource.error("Failed to register cache " + clazz.getName() + " - No constructor that takes a SyncRegistration");

@@ -65,6 +65,11 @@ public abstract class StorageService extends LoggerService implements Service {
      */
     public abstract boolean canCache();
 
+    /**
+     * Called when a cache is registered with the SyncEngine -> meant for internal initialization.
+     */
+    public abstract <K, X extends Sync<K>> void onRegisteredCache(Cache<K, X> cache);
+
 
     // ------------------------------------------------- //
     //                     Indexing                      //

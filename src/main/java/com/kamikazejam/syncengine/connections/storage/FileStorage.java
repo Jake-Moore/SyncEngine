@@ -150,8 +150,14 @@ public class FileStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>> Iterable<X> getAll(Cache<K, X> cache) {
+        // Ensure Directory exists
+        File cacheFolder = getCacheFolder(cache);
+        if (!cacheFolder.exists() && !cacheFolder.mkdirs()) {
+            throw new RuntimeException("Failed to create cache folder: " + cacheFolder.getAbsolutePath());
+        }
+
         // Create an iterator that reads files as requested
-        Iterator<X> iterator = new SyncFilesIterable<>(cache, getCacheFolder(cache).toPath()).iterator();
+        Iterator<X> iterator = new SyncFilesIterable<>(cache, cacheFolder.toPath()).iterator();
         // Adapt the iterator to peek the values as they are provided
         return () -> new TransformingIterator<>(iterator, x -> {
             // Ensure indexes are cached
@@ -180,6 +186,14 @@ public class FileStorage extends StorageService {
     @Override
     public boolean canCache() {
         return true;
+    }
+
+    @Override
+    public <K, X extends Sync<K>> void onRegisteredCache(Cache<K, X> cache) {
+        File cacheFolder = getCacheFolder(cache);
+        if (!cacheFolder.exists() && !cacheFolder.mkdirs()) {
+            throw new RuntimeException("Failed to create cache folder: " + cacheFolder.getAbsolutePath());
+        }
     }
 
     // ------------------------------------------------- //

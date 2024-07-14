@@ -228,6 +228,11 @@ public class MongoStorage extends StorageService {
         return mongoConnected;
     }
 
+    @Override
+    public <K, X extends Sync<K>> void onRegisteredCache(Cache<K, X> cache) {
+        // do nothing -> MongoDB handles it
+    }
+
     // ------------------------------------------------- //
     //                MongoDB Connection                 //
     // ------------------------------------------------- //
