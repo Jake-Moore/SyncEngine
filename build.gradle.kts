@@ -3,7 +3,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 @Suppress("PropertyName")
-val VERSION = "0.5.12"
+val VERSION = "0.5.13"
 
 plugins {
     id("java")

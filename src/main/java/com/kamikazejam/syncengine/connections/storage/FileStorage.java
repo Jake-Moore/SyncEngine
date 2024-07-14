@@ -51,8 +51,6 @@ public class FileStorage extends StorageService {
             @NotNull String newJson = JacksonUtil.toJson(sync);
             if (newJson.equals(json)) {
                 cache.getLoggerService().debug("No changes to save for: " + sync.getId());
-                cache.getLoggerService().debug("NEW: " + newJson);
-                cache.getLoggerService().debug("FILE: " + json);
                 // It is 'saved' successfully (i.e. database has the same data)
                 return TriState.NOT_SET;
             }
