@@ -44,7 +44,7 @@ public class FileStorage extends StorageService {
 
             // Optimistic Versioning (only fails with a valid, newer database version)
             // Ideally this would check equality, but there's some weird stuff with the file system
-            //  where this version read will be outdated, and we don't want to fail for that
+            //  where this version read can be outdated (lower ver), and we don't want to fail for that
             if (dbVer != null && dbVer > sync.getVersion()) {
                 throw new VersionMismatchException(cache, sync.getVersion(), dbVer);
             }
