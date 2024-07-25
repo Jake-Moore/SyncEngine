@@ -2,7 +2,7 @@ package com.kamikazejam.syncengine.connections.redis;
 
 import com.kamikazejam.kamicommon.redis.RedisAPI;
 import com.kamikazejam.kamicommon.redis.RedisConnector;
-import com.kamikazejam.kamicommon.util.LoggerService;
+import com.kamikazejam.kamicommon.util.log.LoggerService;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.connections.config.RedisConfig;
 import lombok.Getter;

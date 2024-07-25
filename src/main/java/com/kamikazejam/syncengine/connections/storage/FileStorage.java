@@ -10,6 +10,7 @@ import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import com.kamikazejam.syncengine.base.index.IndexedField;
+import com.kamikazejam.syncengine.connections.storage.file.ThreadSafeFileIndexing;
 import com.kamikazejam.syncengine.connections.storage.iterable.SyncFilesIterable;
 import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
 import com.kamikazejam.syncengine.util.JacksonUtil;
@@ -255,43 +256,43 @@ public class FileStorage extends StorageService {
     // ------------------------------------------------- //
     //                     Indexing                      //
     // ------------------------------------------------- //
-    //  Map<CacheName,   List<IndexedField>  >
-    protected final Map<String, List<IndexedField<?, ?>>> cacheIndexes = new HashMap<>();
-    //  Map<CacheName,   Map<FieldName,   Map<FieldValue, SyncKey>   >   >
-    protected final Map<String, Map<String, Map<String, String>>> indexMappings = new HashMap<>();
 
     @Override
     public <K, X extends Sync<K>, T> void registerIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index) {
-        List<IndexedField<?,?>> fields = cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
-        fields.add(index);
+        ThreadSafeFileIndexing.addCacheIndex(cache, index);
         this.loadIndexCache(cache, index);
     }
 
     @Override
     public <K, X extends Sync<K>> void cacheIndexes(@NotNull SyncCache<K, X> cache, @NotNull X sync, boolean save) {
-        // Step 0 - Ensure maps are populated
-        List<IndexedField<?, ?>> cacheIndexes = this.cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
-        Map<String, Map<String, String>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
-
         // Step 1 - Remove any data mapped to this sync (will be put back if still valid)
         this.invalidateIndexes(cache, sync.getId(), false);
 
-        // Step 2 - Update the cache with current field data (update field -> Sync mapping)
-        for (IndexedField<?, ?> index : cacheIndexes) {
-            Map<String, String> indexCache = indexMappings.computeIfAbsent(index.getName(), k -> new HashMap<>());
+        // Step 2 - Modify the Mappings
+        ThreadSafeFileIndexing.modifyIndexMappings(cache, mappings -> {
+            // Fetch the indexes to iterate through
+            List<IndexedField<?, ?>> cacheIndexes = ThreadSafeFileIndexing.getCacheIndexes(cache);
 
-            @Nullable Object value = index.getValue(sync);
-            if (value == null) { continue; }
+            // Update each index's mappings
+            for (IndexedField<?, ?> index : cacheIndexes) {
+                Map<String, String> indexCache = mappings.computeIfAbsent(index.getName(), k -> new HashMap<>());
 
-            // Cache this field's value mapped to our Sync
-            @Nullable String old = indexCache.put(index.toString(value), cache.keyToString(sync.getId()));
+                @Nullable Object value = index.getValue(sync);
+                if (value == null) { continue; }
 
-            // Objects.equals valid for Strings
-            if (old != null && !Objects.equals(old, cache.keyToString(sync.getId()))) {
-                cache.getLoggerService().severe("Duplicate index value for field " + index.getName() + " in cache " + cache.getName() + " Previous Sync Id: " + old + " New Sync Id: " + sync.getId());
+                // Cache this field's value mapped to our Sync
+                @Nullable String old = indexCache.put(index.toString(value), cache.keyToString(sync.getId()));
+
+                // Objects.equals valid for Strings
+                if (old != null && !Objects.equals(old, cache.keyToString(sync.getId()))) {
+                    cache.getLoggerService().severe("Duplicate index value for field " + index.getName() + " in cache " + cache.getName() + " Previous Sync Id: " + old + " New Sync Id: " + sync.getId());
+                }
             }
-        }
 
+            return mappings;
+        });
+
+        // Step 3 - Save the Indexes
         if (save) {
             cache.tryAsync(() -> saveIndexCache(cache));
         }
@@ -314,8 +315,8 @@ public class FileStorage extends StorageService {
         Map<String, JsonObject> fieldJsons = new HashMap<>();
 
         // Step 0 - Ensure maps are populated
-        List<IndexedField<?, ?>> cacheIndexes = this.cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
-        Map<String, Map<String, String>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
+        List<IndexedField<?, ?>> cacheIndexes = ThreadSafeFileIndexing.getCacheIndexes(cache);
+        Map<String, Map<String, String>> indexMappings = ThreadSafeFileIndexing.getIndexMappings(cache);
 
         // Loop through all the registered indexes to fetch the mappings
         for (IndexedField<?, ?> index : cacheIndexes) {
@@ -335,7 +336,8 @@ public class FileStorage extends StorageService {
 
     @Override
     public <K, X extends Sync<K>, T> @Nullable K getSyncIdByIndex(@NotNull SyncCache<K, X> cache, IndexedField<X, T> index, T value) {
-        Map<String, String> indexCache = indexMappings.getOrDefault(cache.getName(), new HashMap<>()).get(index.getName());
+        Map<String, Map<String, String>> indexMappings = ThreadSafeFileIndexing.getIndexMappings(cache);
+        @Nullable Map<String, String> indexCache = indexMappings.get(index.getName());
         if (indexCache == null) { return null; }
 
         String syncId = indexCache.get(index.toString(value));
@@ -354,49 +356,55 @@ public class FileStorage extends StorageService {
         if (jsonContent == null || jsonContent.isEmpty()) { return; }
 
         // 2 - Ensure maps are populated
-        Map<String, Map<String, String>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
-        Map<String, String> indexCache = indexMappings.computeIfAbsent(index.getName(), k -> new HashMap<>());
+        ThreadSafeFileIndexing.modifyIndexMappings(cache, (mappings) -> {
+            Map<String, String> indexCache = mappings.computeIfAbsent(index.getName(), k -> new HashMap<>());
 
-        // 3 - Parse the JSON & load caches
-        JsonObject json = JsonParser.parseString(jsonContent).getAsJsonObject();
-        for (Map.Entry<String, JsonElement> entry : json.asMap().entrySet()) {
-            String value = entry.getValue().getAsString();
+            // 3 - Parse the JSON & load caches
+            JsonObject json = JsonParser.parseString(jsonContent).getAsJsonObject();
+            for (Map.Entry<String, JsonElement> entry : json.asMap().entrySet()) {
+                String value = entry.getValue().getAsString();
 
-            // Ensure the value is a valid Sync ID
-            if (!cache.getDatabaseStore().has(cache.keyFromString(value))) {
-                continue;
+                // Ensure the value is a valid Sync ID
+                if (!cache.getDatabaseStore().has(cache.keyFromString(value))) {
+                    continue;
+                }
+
+                indexCache.put(entry.getKey(), value);
             }
-
-            indexCache.put(entry.getKey(), value);
-        }
+            return mappings;
+        });
     }
 
     @Override
     public <K, X extends Sync<K>> void invalidateIndexes(@NotNull SyncCache<K, X> cache, @NotNull K syncId, boolean updateFile) {
-        // Ensure maps are populated
-        List<IndexedField<?, ?>> cacheIndexes = this.cacheIndexes.computeIfAbsent(cache.getName(), k -> new ArrayList<>());
-        Map<String, Map<String, String>> indexMappings = this.indexMappings.computeIfAbsent(cache.getName(), k -> new HashMap<>());
+        // Step 1 - Modify the Mappings
+        ThreadSafeFileIndexing.modifyIndexMappings(cache, (mappings) -> {
+            List<IndexedField<?, ?>> cacheIndexes = ThreadSafeFileIndexing.getCacheIndexes(cache);
 
-        // Remove any data mapped to this sync
-        for (IndexedField<?, ?> index : cacheIndexes) {
-            // Grab the cache for this field name
-            Map<String, String> indexCache = indexMappings.get(index.getName());
-            if (indexCache == null) { continue; }
+            // Remove any data mapped to this sync
+            for (IndexedField<?, ?> index : cacheIndexes) {
+                // Grab the cache for this field name
+                @Nullable Map<String, String> indexCache = mappings.get(index.getName());
+                if (indexCache == null) { continue; }
 
-            // Compile a list of index mappings to remove
-            List<String> toRemove = new ArrayList<>();
-            for (Map.Entry<String, String> entry : indexCache.entrySet()) {
-                // Only scan for mappings pointing at this Sync
-                String k1 = entry.getValue();
-                String k2 = cache.keyToString(syncId);
-                // Objects.equals valid for Strings
-                if (!Objects.equals(k1, k2)) { continue; }
+                // Compile a list of index mappings to remove
+                List<String> toRemove = new ArrayList<>();
+                for (Map.Entry<String, String> entry : indexCache.entrySet()) {
+                    // Only scan for mappings pointing at this Sync
+                    String k1 = entry.getValue();
+                    String k2 = cache.keyToString(syncId);
+                    // Objects.equals valid for Strings
+                    if (!Objects.equals(k1, k2)) { continue; }
 
-                toRemove.add(entry.getKey());
+                    toRemove.add(entry.getKey());
+                }
+                toRemove.forEach(indexCache::remove);
             }
-            toRemove.forEach(indexCache::remove);
-        }
 
+            return mappings;
+        });
+
+        // Step 2 - Save the Indexes
         if (updateFile) {
             cache.tryAsync(() -> saveIndexCache(cache));
         }

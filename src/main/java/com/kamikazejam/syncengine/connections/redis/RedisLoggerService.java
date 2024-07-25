@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.connections.redis;
 
-import com.kamikazejam.kamicommon.util.LoggerService;
 import com.kamikazejam.kamicommon.util.StringUtil;
+import com.kamikazejam.kamicommon.util.log.LoggerService;
 import com.kamikazejam.syncengine.EngineSource;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;

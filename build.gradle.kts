@@ -3,7 +3,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 @Suppress("PropertyName")
-val VERSION = "0.5.14"
+val VERSION = "0.5.15"
 
 plugins {
     id("java")
@@ -13,7 +13,7 @@ plugins {
 }
 
 // Export KamiCommonVer for use in all subprojects
-val kamiCommonVer = "3.1.0.6"
+val kamiCommonVer = "3.3.1.0"
 
 group = "com.kamikazejam"
 version = VERSION
@@ -22,7 +22,7 @@ description = "A data storage and synchronization library for Spigot plugins."
 repositories {
     mavenLocal()
     mavenCentral()
-    maven("https://nexus.luxiouslabs.net/public")
+    maven("https://repo.luxiouslabs.net/repository/maven-public/")
 }
 
 // We want UTF-8 for everything
@@ -132,10 +132,15 @@ publishing {
 
     repositories {
         maven {
-            url = uri("https://nexus.luxiouslabs.net/public")
             credentials {
                 username = System.getenv("LUXIOUS_NEXUS_USER")
                 password = System.getenv("LUXIOUS_NEXUS_PASS")
+            }
+            // Select URL based on version (if it's a snapshot or not)
+            url = if (project.version.toString().endsWith("-SNAPSHOT")) {
+                uri("https://repo.luxiouslabs.net/repository/maven-snapshots/")
+            }else {
+                uri("https://repo.luxiouslabs.net/repository/maven-releases/")
             }
         }
     }
