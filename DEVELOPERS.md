@@ -6,6 +6,14 @@ For instance, you can shade it into your own plugin if you'd like. You just need
 **Developers hooking into the SyncEngine plugin**: Follow Steps 1 & 2
 **Developers shading SyncEngine**: Follow Steps 1 through 4
 
+## ⚠️ Repository Notice
+
+**Please note:** The Maven repository for this project has been changed.  
+The migration from [Reposilite](https://reposilite.com/) to [Sonatype Nexus OSS](https://www.sonatype.com/products/sonatype-nexus-repository) has been made.  
+You must update your repository url to continue using SyncEngine.
+- Old jars can no longer be pulled from the repo
+- A few old jars remain available in the github releases
+
 ### Step 1 - Adding the Repository
 To do anything with SyncEngine, you'll have to add it to your project.  
 First you'll need to add the public maven repository:
@@ -14,21 +22,21 @@ First you'll need to add the public maven repository:
 <repository>
   <id>luxious-public</id>
   <name>Luxious Repository</name>
-  <url>https://nexus.luxiouslabs.net/public</url>
+  <url>https://repo.luxiouslabs.net/repository/maven-public/</url>
 </repository>
 ```
 #### Gradle (kotlin) [build.gradle.kts]:
 ```kotlin
 maven {
     name = "luxiousPublic"
-    url = uri("https://nexus.luxiouslabs.net/public")
+    url = uri("https://repo.luxiouslabs.net/repository/maven-public/")
 }
 ```
 #### Gradle (groovy) [build.gradle]:
 ```groovy
 maven {
   name "luxiousPublic"
-  url "https://nexus.luxiouslabs.net/public"
+  url "https://repo.luxiouslabs.net/repository/maven-public/"
 }
 ```
 
