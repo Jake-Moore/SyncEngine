@@ -3,14 +3,14 @@ package com.kamikazejam.syncengine.connections.storage.iterable;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.util.JacksonUtil;
-import org.apache.commons.io.FileUtils;
+import com.kamikazejam.syncengine.util.ThreadSafeFileHandler;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.Objects;
 
 public class SyncFilesIterable<K, X extends Sync<K>> implements Iterable<X> {
     private final Cache<K, X> cache;
@@ -35,8 +35,8 @@ public class SyncFilesIterable<K, X extends Sync<K>> implements Iterable<X> {
                 public X next() {
                     Path filePath = pathIterator.next();
                     try {
-                        String json = FileUtils.readFileToString(filePath.toFile(), StandardCharsets.UTF_8);
-                        return JacksonUtil.deserialize(cache.getSyncClass(), json);
+                        String json = Objects.requireNonNull(ThreadSafeFileHandler.readFile(filePath));
+                        return JacksonUtil.fromJson(cache.getSyncClass(), json);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to read file: " + filePath, e);
                     }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import com.kamikazejam.syncengine.base.Sync;
+import com.kamikazejam.syncengine.util.jackson.JacksonSpigotModule;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -43,6 +44,10 @@ public class JacksonUtil {
 
         // Enable serialization of null and empty values
         mapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+
+        // Add Basic Spigot Types Module, for handling basic types
+        mapper.registerModule(new JacksonSpigotModule());
+
         return mapper;
     }
 
