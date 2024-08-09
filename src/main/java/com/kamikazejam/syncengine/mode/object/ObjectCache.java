@@ -12,6 +12,7 @@ import java.util.Optional;
 /**
  * Defines Object-specific getters for SyncObjects. They return non-null Optionals.
  */
+@SuppressWarnings("unused")
 public interface ObjectCache<X extends SyncObject> extends Cache<String, X> {
     /**
      * Get a Sync object from this cache (will load from DB if necessary)
@@ -34,12 +35,23 @@ public interface ObjectCache<X extends SyncObject> extends Cache<String, X> {
     X getOrCreate(@NotNull String key);
 
     /**
-     * Retrieves ALL Syncs from the database. Optionally caches them.
+     * Retrieves ALL Syncs, including cached values and additional values from database.
+     * @param cacheSyncs If true, any additional Sync fetched from db will be cached.
      * @return An Iterable of all Syncs, for sequential processing.
      */
     @Blocking
     @NotNull
     Iterable<X> getAll(boolean cacheSyncs);
+
+    /**
+     * Loads all Syncs directly from db, bypassing the cache.
+     * Unless you have a reason to use this, please use {@link #getAll(boolean)} instead.
+     * @param cacheSyncs If true, syncs loaded from the database will be cached.
+     * @return An Iterable of all Syncs, for sequential processing.
+     */
+    @Blocking
+    @NotNull
+    Iterable<X> getAllFromDatabase(boolean cacheSyncs);
 
     /**
      * Saves all Sync objects in this cache to the database.

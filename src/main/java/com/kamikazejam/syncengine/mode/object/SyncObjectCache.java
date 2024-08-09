@@ -20,10 +20,7 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -156,28 +153,52 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
     @NotNull
     @Override
     public Iterable<X> getAll(boolean cacheSyncs) {
+        Iterator<String> keysIterable = databaseStore.getKeys().iterator();
+
+        // Create an Iterable that iterates through all database keys, transforming into Syncs
+        return () -> new TransformingIterator<>(keysIterable, key -> {
+            // 1. If we have the object in the cache -> return it
+            Optional<X> o = localStore.get(key);
+            if (o.isPresent()) {
+                return o.get();
+            }
+
+            // 2. We don't have the object in the cache -> load it from the database
+            // If for some reason this was deleted, or not found, we can just return null
+            //  and the TransformingIterator will skip it
+            Optional<X> db = databaseStore.get(key);
+            if (db.isEmpty()) {
+                return null;
+            }
+
+            // Optionally cache this loaded Sync
+            if (cacheSyncs) {
+                SyncObjectCache.this.cache(db.get());
+            }
+            return db.get();
+        });
+    }
+
+    @Override
+    public @NotNull Iterable<X> getAllFromDatabase(boolean cacheSyncs) {
         // Create an Iterable that iterates through all database objects, and updates local objects as necessary
         Iterator<X> dbIterator = databaseStore.getAll().iterator();
-        return () -> new TransformingIterator<>(dbIterator, x -> {
-            // Load the local object, and if it exists -> update it from newer (database ver)
-            Optional<X> o = localStore.get(x.getId());
-            o.ifPresent(sync -> {
-                // Don't attempt to load database version if its older
-                if (x.getVersion() < sync.getVersion()) {
-                    return;
-                }
-                SyncObjectCache.this.updateSyncFromNewer(sync, x);
-            });
-            // Find the sync object to return
-            @NotNull X sync = o.orElse(x);
+        return () -> new TransformingIterator<>(dbIterator, dbSync -> {
+            // Load the local object
+            Optional<X> local = localStore.get(dbSync.getId());
 
-            // Verify it has the correct cache and cache it if necessary
-            x.setCache(SyncObjectCache.this);
-            if (o.isEmpty() && cacheSyncs) {
-                // Won't call updateSyncFromNewer since o is empty
-                SyncObjectCache.this.cache(x);
+            // If we want to cache, and have a local sync that's newer -> update the local sync
+            // Note, if not caching then we won't update any local syncs and won't cache the db sync
+            if (cacheSyncs && local.isPresent() && dbSync.getVersion() >= local.get().getVersion()) {
+                SyncObjectCache.this.updateSyncFromNewer(local.get(), dbSync);
+                SyncObjectCache.this.cache(dbSync);
             }
-            return sync;
+
+            // Find the sync object to return
+            @NotNull X ret = local.orElse(dbSync);
+            // Verify it has the correct cache and cache it if necessary
+            ret.setCache(SyncObjectCache.this);
+            return ret;
         });
     }
 
