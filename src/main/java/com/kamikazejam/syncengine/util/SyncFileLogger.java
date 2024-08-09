@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.util;
 
 import com.kamikazejam.syncengine.EngineSource;
+import com.kamikazejam.syncengine.base.Cache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,10 +22,10 @@ public class SyncFileLogger {
      * @return The file written, if successful
      */
     @Nullable
-    public static File warn(@NotNull String msg) {
+    public static File warn(@NotNull Cache<?,?> cache, @NotNull String msg) {
         // Print the message + a stack trace to a file
-        File file = new File(EngineSource.get().getDataFolder() + File.separator + "logs",
-                System.currentTimeMillis() + ".log");
+        String fileName = cache.getPlugin().getName() + "_" + cache.getName() + "_" + System.currentTimeMillis() + ".log";
+        File file = new File(EngineSource.get().getDataFolder() + File.separator + "logs", fileName);
 
         IOException saveError = appendToFile(createStackTrace(msg), file);
         if (saveError == null) {
@@ -42,9 +43,9 @@ public class SyncFileLogger {
      * @return The file written, if successful
      */
     @Nullable
-    public static File warn(@NotNull String msg, @NotNull Throwable trace) {
+    public static File warn(@NotNull Cache<?,?> cache, @NotNull String msg, @NotNull Throwable trace) {
         // Log the trace from what we can find
-        File file = SyncFileLogger.warn(msg);
+        File file = SyncFileLogger.warn(cache, msg);
         if (file == null) { return null; }
 
         // Add some empty lines for separation

@@ -219,11 +219,11 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     protected boolean saveSynchronously(@NotNull X sync, @NotNull Throwable trace) {
         Preconditions.checkNotNull(sync);
         if (sync.isReadOnly()) {
-            SyncFileLogger.warn("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId(), trace);
+            SyncFileLogger.warn(this, "Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId(), trace);
             return false;
         }
         if (!sync.isValid()) {
-            SyncFileLogger.warn("Cannot save an invalid Sync, cache: " + getName() + " id: " + sync.getId(), trace);
+            SyncFileLogger.warn(this ,"Cannot save an invalid Sync, cache: " + getName() + " id: " + sync.getId(), trace);
             return false;
         }
 
@@ -251,11 +251,11 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     public CompletableFuture<Boolean> save(@NotNull X sync) {
         Preconditions.checkNotNull(sync);
         if (sync.isReadOnly()) {
-            SyncFileLogger.warn("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
+            SyncFileLogger.warn(this, "Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
             return CompletableFuture.completedFuture(false);
         }
         if (!sync.isValid()) {
-            SyncFileLogger.warn("Cannot save an invalid Sync, cache: " + getName() + " id: " + sync.getId());
+            SyncFileLogger.warn(this, "Cannot save an invalid Sync, cache: " + getName() + " id: " + sync.getId());
             return CompletableFuture.completedFuture(false);
         }
 

@@ -283,11 +283,11 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
     public boolean saveSynchronously(@NotNull X sync) {
         Preconditions.checkNotNull(sync, "Cannot save a null SyncProfile");
         if (sync.isReadOnly()) {
-            SyncFileLogger.warn("Cannot save a read-only SyncProfile, cache: " + getName() + " id: " + sync.getId());
+            SyncFileLogger.warn(this, "Cannot save a read-only SyncProfile, cache: " + getName() + " id: " + sync.getId());
             return false;
         }
         if (!sync.isValid()) {
-            SyncFileLogger.warn("Cannot save an invalid SyncProfile, cache: " + getName() + " id: " + sync.getId());
+            SyncFileLogger.warn(this, "Cannot save an invalid SyncProfile, cache: " + getName() + " id: " + sync.getId());
             return false;
         }
 
