@@ -119,4 +119,14 @@ public interface Sync<K> {
      * Creates a new Sync (a copy) and saves it as this Sync's cached copy.
      */
     void cacheCopy();
+
+    /**
+     * @return If this Sync is valid and can be saved / updated. (i.e. not deleted)
+     */
+    boolean isValid();
+
+    /**
+     * Makes this Sync object invalid. It can no longer receive updates or be saved. (i.e. it was deleted)
+     */
+    void invalidate();
 }

@@ -5,6 +5,8 @@ import com.kamikazejam.syncengine.base.cache.SyncLoader;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
 import com.kamikazejam.syncengine.base.index.IndexedField;
+import com.kamikazejam.syncengine.base.store.StoreDatabase;
+import com.kamikazejam.syncengine.base.store.StoreLocal;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.mode.object.ObjectCache;
@@ -133,13 +135,13 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * Gets the {@link StoreMethods} that handles local storage for this cache.
      */
     @NotNull
-    StoreMethods<K, X> getLocalStore();
+    StoreLocal<K, X> getLocalStore();
 
     /**
      * Gets the {@link StoreMethods} that handles database storage for this cache.
      */
     @NotNull
-    StoreMethods<K, X> getDatabaseStore();
+    StoreDatabase<K, X> getDatabaseStore();
 
     /**
      * Gets the plugin that set up this cache.

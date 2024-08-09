@@ -1,7 +1,6 @@
 package com.kamikazejam.syncengine.base;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.kamicommon.util.KUtil;
 import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncEngineAPI;
@@ -17,6 +16,7 @@ import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
 import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
+import com.kamikazejam.syncengine.util.SyncFileLogger;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.IllegalPluginAccessException;
@@ -213,9 +213,18 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 
     @Override
     public boolean saveSynchronously(@NotNull X sync) {
+        return this.saveSynchronously(sync, SyncFileLogger.createStackTrace("SyncCache.saveSynchronously()"));
+    }
+
+    protected boolean saveSynchronously(@NotNull X sync, @NotNull Throwable trace) {
         Preconditions.checkNotNull(sync);
         if (sync.isReadOnly()) {
-            KUtil.printStackTrace("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
+            SyncFileLogger.warn("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId(), trace);
+            return false;
+        }
+        if (!sync.isValid()) {
+            SyncFileLogger.warn("Cannot save an invalid Sync, cache: " + getName() + " id: " + sync.getId(), trace);
+            return false;
         }
 
         this.cache(sync);
@@ -242,11 +251,17 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
     public CompletableFuture<Boolean> save(@NotNull X sync) {
         Preconditions.checkNotNull(sync);
         if (sync.isReadOnly()) {
-            KUtil.printStackTrace("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
+            SyncFileLogger.warn("Cannot save a read-only Sync, cache: " + getName() + " id: " + sync.getId());
+            return CompletableFuture.completedFuture(false);
+        }
+        if (!sync.isValid()) {
+            SyncFileLogger.warn("Cannot save an invalid Sync, cache: " + getName() + " id: " + sync.getId());
+            return CompletableFuture.completedFuture(false);
         }
 
+        Throwable trace = SyncFileLogger.createStackTrace("SyncCache.save()");
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        runAsync(() -> future.complete(saveSynchronously(sync)));
+        runAsync(() -> future.complete(saveSynchronously(sync, trace)));
         return future;
     }
 
@@ -307,9 +322,9 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         X x = instantiator.instantiate();
 
         x.setId(key);
-        // Cache and save this object
+        // Cache and save this object (save it sync to ensure it's done before we return)
         this.cache(x);
-        x.save();
+        x.saveSynchronously();
         return x;
     }
 

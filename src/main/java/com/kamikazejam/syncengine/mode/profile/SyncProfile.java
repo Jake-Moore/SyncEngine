@@ -52,6 +52,7 @@ public abstract class SyncProfile implements Sync<UUID> {
     protected transient @Nullable Long handshakeVersion = null;
     protected transient @Nullable Long readOnlyTimeStamp = null; // when read-only was set (for a swap handshake)
     protected transient @Nullable Sync<UUID> cachedCopy;
+    protected transient boolean validObject = true;
 
 
     // ----------------------------------------------------- //
@@ -254,4 +255,13 @@ public abstract class SyncProfile implements Sync<UUID> {
         return this.player != null && this.player.isOnline();
     }
 
+    @Override
+    public boolean isValid() {
+        return this.validObject;
+    }
+
+    @Override
+    public void invalidate() {
+        this.validObject = false;
+    }
 }

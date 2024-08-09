@@ -3,7 +3,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 @Suppress("PropertyName")
-val VERSION = "0.5.17"
+val VERSION = "0.5.18"
 
 plugins {
     id("java")
@@ -13,7 +13,7 @@ plugins {
 }
 
 // Export KamiCommonVer for use in all subprojects
-val kamiCommonVer = "3.3.1.0"
+val kamiCommonVer = "3.3.1.6"
 
 group = "com.kamikazejam"
 version = VERSION

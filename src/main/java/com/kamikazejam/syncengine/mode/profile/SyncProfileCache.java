@@ -1,7 +1,6 @@
 package com.kamikazejam.syncengine.mode.profile;
 
 import com.google.common.base.Preconditions;
-import com.kamikazejam.kamicommon.util.KUtil;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.EngineSource;
@@ -13,7 +12,7 @@ import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.base.save.ProfileAutoSaveInstantiator;
 import com.kamikazejam.syncengine.base.save.ProfileAutoSaveTask;
-import com.kamikazejam.syncengine.base.store.StoreMethods;
+import com.kamikazejam.syncengine.base.store.StoreDatabase;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.mode.profile.handshake.ProfileHandshakeService;
@@ -22,6 +21,7 @@ import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.mode.profile.store.ProfileStoreDatabase;
 import com.kamikazejam.syncengine.mode.profile.store.ProfileStoreLocal;
 import com.kamikazejam.syncengine.mode.profile.update.ProfileUpdater;
+import com.kamikazejam.syncengine.util.SyncFileLogger;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -138,7 +138,7 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
     }
 
     @Override
-    public @NotNull StoreMethods<UUID, X> getDatabaseStore() {
+    public @NotNull StoreDatabase<UUID, X> getDatabaseStore() {
         return databaseStore;
     }
 
@@ -283,7 +283,12 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
     public boolean saveSynchronously(@NotNull X sync) {
         Preconditions.checkNotNull(sync, "Cannot save a null SyncProfile");
         if (sync.isReadOnly()) {
-            KUtil.printStackTrace("Cannot save a read-only SyncProfile, cache: " + getName() + " id: " + sync.getId());
+            SyncFileLogger.warn("Cannot save a read-only SyncProfile, cache: " + getName() + " id: " + sync.getId());
+            return false;
+        }
+        if (!sync.isValid()) {
+            SyncFileLogger.warn("Cannot save an invalid SyncProfile, cache: " + getName() + " id: " + sync.getId());
+            return false;
         }
 
         cache(sync);

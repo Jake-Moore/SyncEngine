@@ -46,6 +46,9 @@ public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K
     @Override
     public boolean remove(@NotNull K key) {
         @Nullable X x = this.localCache.remove(key);
+        if (x != null) {
+            x.invalidate();
+        }
         return x != null;
     }
 

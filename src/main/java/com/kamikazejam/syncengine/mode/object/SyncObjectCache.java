@@ -8,7 +8,7 @@ import com.kamikazejam.syncengine.base.cache.CacheSaveResult;
 import com.kamikazejam.syncengine.base.error.CacheLoggerService;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.index.IndexedField;
-import com.kamikazejam.syncengine.base.store.StoreMethods;
+import com.kamikazejam.syncengine.base.store.StoreDatabase;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.connections.storage.iterable.TransformingIterator;
@@ -20,7 +20,10 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,7 +92,7 @@ public abstract class SyncObjectCache<X extends SyncObject> extends SyncCache<St
 
     @NotNull
     @Override
-    public StoreMethods<String, X> getDatabaseStore() {
+    public StoreDatabase<String, X> getDatabaseStore() {
         return databaseStore;
     }
 

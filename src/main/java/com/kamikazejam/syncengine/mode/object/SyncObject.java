@@ -34,6 +34,7 @@ public abstract class SyncObject implements Sync<String> {
     protected transient SyncObjectCache cache;
     protected transient @Nullable Long readOnlyTimeStamp = null;
     protected transient @Nullable Sync<String> cachedCopy;
+    protected transient boolean validObject = true;
 
 
     // ----------------------------------------------------- //
@@ -150,5 +151,15 @@ public abstract class SyncObject implements Sync<String> {
         this.copyInto(deepCopySync);
         // Cache this Copy for VersionMismatchException correction
         this.setCachedCopy(deepCopySync);
+    }
+
+    @Override
+    public boolean isValid() {
+        return this.validObject;
+    }
+
+    @Override
+    public void invalidate() {
+        this.validObject = false;
     }
 }
