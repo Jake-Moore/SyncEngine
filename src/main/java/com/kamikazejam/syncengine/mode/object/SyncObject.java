@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +35,7 @@ public abstract class SyncObject implements Sync<String> {
     protected transient SyncObjectCache cache;
     protected transient @Nullable Long readOnlyTimeStamp = null;
     protected transient @Nullable Sync<String> cachedCopy;
+    @Getter(AccessLevel.NONE)
     protected transient boolean validObject = true;
 
 

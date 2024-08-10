@@ -3,6 +3,7 @@ package com.kamikazejam.syncengine.base.store;
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.util.data.TriState;
 import com.kamikazejam.syncengine.base.Sync;
+import com.kamikazejam.syncengine.util.SyncFileLogger;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +29,12 @@ public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K
 
     @Override
     public @NotNull TriState save(@NotNull X sync) {
+        // Ensure we don't re-cache an invalid Sync
+        if (!sync.isValid()) {
+            SyncFileLogger.warn(sync.getCache(), "StoreLocal.save(X) w/ Invalid Sync. Cache: " + sync.getCache().getName() + ", Id: " + sync.getId());
+            return TriState.FALSE;
+        }
+
         // If not called already, call initialized (since we're caching it)
         this.localCache.put(sync.getId(), sync);
         return TriState.TRUE;
