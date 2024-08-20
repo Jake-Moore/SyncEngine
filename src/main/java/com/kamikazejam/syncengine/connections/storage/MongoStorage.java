@@ -131,7 +131,6 @@ public class MongoStorage extends StorageService {
 
             // 2. If we have no changes to the json, don't bother writing (save the IO)
             if (JacksonUtil.toJson(sync).equals(JacksonUtil.toJson(database))) {
-                cache.getLoggerService().debug("No changes to save for: " + sync.getId());
                 return TriState.NOT_SET;
             }
 

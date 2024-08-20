@@ -232,6 +232,9 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         if (state == TriState.FALSE) {
             loggerService.info("Failed to save Sync " + keyToString(sync.getId()));
             return false;
+        }else if (state == TriState.NOT_SET) {
+            // Log the no-changes
+            SyncFileLogger.warn(this, "No changes to save for: " + sync.getId(), trace);
         }
 
         // Push update so other servers can load the new data
