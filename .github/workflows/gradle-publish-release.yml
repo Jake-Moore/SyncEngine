@@ -36,7 +36,8 @@ jobs:
       - name: Extract Version from Gradle
         id: extract_version
         run: |
-          version=$(awk -F'"' '/var VERSION =/{print $2}' build.gradle.kts)
+          gradle clean
+          version=$(gradle properties -q | grep "^version:" | awk '{print $2}')
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Display Version
