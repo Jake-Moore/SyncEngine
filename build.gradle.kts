@@ -1,9 +1,8 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 @Suppress("PropertyName")
-val VERSION = "0.5.21"
+val VERSION = "0.5.22"
 
 plugins {
     id("java")
@@ -13,7 +12,7 @@ plugins {
 }
 
 // Export KamiCommonVer for use in all subprojects
-val kamiCommonVer = "3.3.1.6"
+val kamiCommonVer = "3.6.0.0"
 
 group = "com.kamikazejam"
 version = VERSION
@@ -33,21 +32,18 @@ tasks.withType<Javadoc> {
     options.encoding = Charsets.UTF_8.name()
 }
 
-// All modules use Java 21
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
-}
+// Require Java 21
+java.toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 
 dependencies {
     // Spigot (from public nexus)
     compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
 
     // KamiCommon
-    compileOnly("com.kamikazejam.kamicommon:spigot-utils:$kamiCommonVer")
-    compileOnly("com.kamikazejam.kamicommon:generic-jar:$kamiCommonVer")
+    compileOnly("com.kamikazejam.kamicommon:spigot-jar:$kamiCommonVer")
 
     // MongoJack
-    shadow("org.mongojack:mongojack:5.0.0")
+    implementation("org.mongojack:mongojack:5.0.0")
 
     // Annotation Processors
     //   Lombok
@@ -65,19 +61,13 @@ tasks.register<Delete>("cleanLibs") {
     delete("build/libs")
 }
 
-// Define
-tasks.withType<ShadowJar> {
-    // Do Not minimize -> messes up the spigot-jar which may need those classes
-    // Apply common settings to all shadow jars
-    archiveClassifier.set("")
-    configurations = listOf(project.configurations.shadow.get())
-}
-
 tasks {
     build.get().dependsOn(shadowJar)
     shadowJar.get().dependsOn("cleanLibs")
 
     shadowJar {
+        archiveClassifier.set("")
+
         // Relocations
         // don't relocate jackson
         relocate("com.mongodb", "shaded.com.kamikazejam.syncengine.mongodb")

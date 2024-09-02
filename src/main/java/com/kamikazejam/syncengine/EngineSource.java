@@ -2,7 +2,7 @@ package com.kamikazejam.syncengine;
 
 import com.kamikazejam.kamicommon.KamiPlugin;
 import com.kamikazejam.kamicommon.SpigotUtilProvider;
-import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
+import com.kamikazejam.kamicommon.configuration.spigot.KamiConfig;
 import com.kamikazejam.kamicommon.util.Txt;
 import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
 import com.kamikazejam.kamicommon.yaml.standalone.YamlUtil;

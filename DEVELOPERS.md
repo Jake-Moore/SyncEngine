@@ -3,16 +3,8 @@
 The SyncEngine project only has one module. Depending on how its used, a developer can achieve different goals.  
 For instance, you can shade it into your own plugin if you'd like. You just need to do a few things:
 
-**Developers hooking into the SyncEngine plugin**: Follow Steps 1 & 2
+**Developers hooking into the SyncEngine plugin**: Follow Steps 1 & 2  
 **Developers shading SyncEngine**: Follow Steps 1 through 4
-
-## ⚠️ Repository Notice
-
-**Please note:** The Maven repository for this project has been changed.  
-The migration from [Reposilite](https://reposilite.com/) to [Sonatype Nexus OSS](https://www.sonatype.com/products/sonatype-nexus-repository) has been made.  
-You must update your repository url to continue using SyncEngine.
-- Old jars can no longer be pulled from the repo
-- A few old jars remain available in the github releases
 
 ### Step 1 - Adding the Repository
 To do anything with SyncEngine, you'll have to add it to your project.  
@@ -91,9 +83,10 @@ public class MyPlugin extends KamiPlugin {
 
 ### Step 4 - Providing SyncEngine's Dependencies
 SyncEngine has a few dependencies, but the only one that a developer needs to ensure is `KamiCommon`.  
-SyncEngine does not shade `KamiCommon`, as such it is necessary that it finds it on the classpath. The `:spigot-jar` module does this by setting a plugin dependency.  
-As a developer using SyncEngine you can either add a `KamiCommon` plugin dependency to your plugin, or shade `KamiCommon` into your project as well.  
-The process for shading `KamiCommon` is very similar, and just requires you use `KamiCommon`'s `PluginSource` in the same manner as `EngineSource`. (Call `PluginSource` first on enable).  
+SyncEngine does not shade `KamiCommon`, as such it is necessary that it finds it on the classpath.  
+The easiest way to do this is to install KamiCommon on the server side, and depend on it in your `plugin.yml`.  
+
+For developers who don't want to do this, you can shade the KamiCommon `spigot-jar` module and use its `PluginSource` class in a similar way to `EngineSource`.
 
 All other dependencies (like MongoJack) are shaded into the jar, so you don't need to worry about them.
 

@@ -1,6 +1,6 @@
 package com.kamikazejam.syncengine.connections.config;
 
-import com.kamikazejam.kamicommon.configuration.config.KamiConfig;
+import com.kamikazejam.kamicommon.configuration.spigot.KamiConfig;
 import com.kamikazejam.kamicommon.redis.util.RedisConf;
 import com.kamikazejam.syncengine.EngineSource;
 import lombok.Getter;

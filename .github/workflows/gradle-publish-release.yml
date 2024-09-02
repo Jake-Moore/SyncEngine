@@ -33,6 +33,15 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Extract Version from Gradle
+        id: extract_version
+        run: |
+          version=$(awk -F'"' '/var VERSION =/{print $2}' build.gradle.kts)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Display Version
+        run: echo "Version is ${{ steps.extract_version.outputs.version }}"
+
       - name: Build with Gradle 8.7
         if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
         run: gradle publish
@@ -43,14 +52,6 @@ jobs:
       #--------------------------------------------------------------------------------------------
       #           Create a Github Release
       #--------------------------------------------------------------------------------------------
-      - name: Extract Version from Gradle
-        id: extract_version
-        run: |
-          version=$(awk -F'"' '/val VERSION =/{print $2}' build.gradle.kts)
-          echo "version=$version" >> $GITHUB_OUTPUT
-
-      - name: Display Version
-        run: echo "Version is ${{ steps.extract_version.outputs.version }}"
 
       - name: Create Release (Spigot Jar + Module Jars)
         if: "!endsWith(steps.extract_version.outputs.version, 'SNAPSHOT')"
