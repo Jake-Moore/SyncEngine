@@ -33,7 +33,8 @@ public class CmdServers extends KamiCommand {
         sender.sendMessage(StringUtil.t("&7***** &6Sync Servers Connected In Group: '" + group + "' &7*****"));
         for (SyncServer server : serverService.getSyncServers()) {
             String online = server.isOnline() ? "&aOnline" : "&cOffline";
-            sender.sendMessage(StringUtil.t("&7 - &e" + server.getName() + " &7- " + online + " &7- Last pinged &6" + convertPing(server.getLastPing())));
+            String pingData = (server.getName().equalsIgnoreCase(EngineSource.getSyncServerId())) ? " &7- (self)" : " &7- Last pinged &6" + convertPing(server.getLastPing());
+            sender.sendMessage(StringUtil.t("&7 - &e" + server.getName() + " &7- " + online + pingData));
         }
     }
 

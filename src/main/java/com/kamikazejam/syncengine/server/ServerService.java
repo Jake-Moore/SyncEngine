@@ -22,8 +22,8 @@ import java.util.concurrent.ConcurrentMap;
 @Getter
 public class ServerService extends LoggerService implements Runnable, Service {
 
-    public static final long ASSUME_OFFLINE_SECONDS = 30;
-    public static final long PING_FREQUENCY_SECONDS = 5;
+    public static final long ASSUME_OFFLINE_SECONDS = 70; // If missed 2 pings, assume offline
+    public static final long PING_FREQUENCY_SECONDS = 30;
 
     private final JavaPlugin plugin;
     private final SyncServer thisServer;
@@ -76,6 +76,8 @@ public class ServerService extends LoggerService implements Runnable, Service {
 
             // Check that this redis message is for us (same group)
             if (!packet.getSyncGroup().equalsIgnoreCase(EngineSource.getSyncServerGroup())) { return; }
+            // Ignore updates that this server sent
+            if (packet.getSyncID().equalsIgnoreCase(thisServer.getName())) { return; }
 
             if (event.equals(ServerStatus.JOIN)) {
                 handleJoin(packet.getSyncID());
@@ -129,14 +131,18 @@ public class ServerService extends LoggerService implements Runnable, Service {
         final String serverGroup = EngineSource.getSyncServerGroup();
         this.debug("Server: " + serverName + " Joined Group: " + serverGroup + " (adding)");
 
-        if (syncServerMap.containsKey(serverName)) {
-            syncServerMap.get(serverName).setOnline(true);
-            syncServerMap.get(serverName).setLastPing(System.currentTimeMillis());
+        @Nullable SyncServer server = get(serverName).orElse(null);
+        boolean newlyOnline = (server == null || !server.isOnline());
+
+        if (server != null) {
+            server.setOnline(true);
+            server.setLastPing(System.currentTimeMillis());
         } else {
             this.register(serverName, true);
+        }
 
-            // Send other servers a ping of this server, so that this existing server
-            //  can be added to the new 'joining' server's list
+        if (newlyOnline) {
+            // Send a ping to the new server, so that it can add this server to its list
             doPing();
         }
     }

@@ -61,7 +61,7 @@ public enum SyncMode {
         }
 
         if (serverService == null) {
-            EngineSource.get().getColorLogger().warn("Enabling ServerService..."); // TODO INFO LEVEL
+            EngineSource.get().getColorLogger().info("Enabling ServerService...");
             serverService = new ServerService();
             if (!serverService.start()) {
                 EngineSource.get().getLogger().severe(StringUtil.t("&cFailed to start ServerService, shutting down..."));

@@ -35,7 +35,7 @@ public class ServerPublisher {
                     String syncGroup = service.getThisServer().getGroup();
 
                     SyncServerPacket packet = SyncServerPacket.of(syncID, syncGroup);
-                    EngineSource.get().getColorLogger().severe("ServerPublisher: Publishing JOIN event");
+                    service.info("ServerPublisher: Publishing JOIN event");
                     service.getMultiChannel().publishAsync(ServerStatus.JOIN.getChannel(), packet);
 
                     Bukkit.getPluginManager().callEvent(new SyncServerPublishJoinEvent(syncID, syncGroup));
@@ -50,7 +50,7 @@ public class ServerPublisher {
                     String syncGroup = service.getThisServer().getGroup();
 
                     SyncServerPacket packet = SyncServerPacket.of(syncID, syncGroup);
-                    EngineSource.get().getColorLogger().severe("ServerPublisher: Publishing PING event");
+                    // service.info("ServerPublisher: Publishing JOIN event"); // commented to prevent spam
                     service.getMultiChannel().publishAsync(ServerStatus.PING.getChannel(), packet);
 
                     Bukkit.getPluginManager().callEvent(new SyncServerPublishPingEvent(syncID, syncGroup));
@@ -66,7 +66,7 @@ public class ServerPublisher {
                     String syncGroup = service.getThisServer().getGroup();
 
                     SyncServerPacket packet = SyncServerPacket.of(syncID, syncGroup);
-                    EngineSource.get().getColorLogger().severe("ServerPublisher: Publishing QUIT event");
+                    service.info("ServerPublisher: Publishing QUIT event");
                     service.getMultiChannel().publishSync(ServerStatus.QUIT.getChannel(), packet);
 
                     Bukkit.getPluginManager().callEvent(new SyncServerPublishQuitEvent(syncID, syncGroup));
