@@ -9,52 +9,52 @@ import java.util.Optional;
 
 public class StandaloneProfileLoader {
 
-    protected static <X extends SyncProfile> void loadStandalone(SyncProfileLoader<X> L) {
+    protected static <X extends SyncProfile> void loadStandalone(SyncProfileLoader<X> loader) {
         // Try loading from local
-        Optional<X> localSync = L.cache.getLocalStore().get(L.uuid);
+        Optional<X> localSync = loader.cache.getLocalStore().get(loader.uuid);
         if (localSync.isPresent()) {
-            L.sync = localSync.get();
+            loader.sync = localSync.get();
             return;
         }
 
         // Try loading from database
-        Optional<X> o = L.cache.getDatabaseStore().get(L.uuid);
+        Optional<X> o = loader.cache.getDatabaseStore().get(loader.uuid);
         if (o.isEmpty()) {
             // Make a new profile if they are logging in
-            if (L.login) {
-                L.cache.getLoggerService().debug("Creating a new SyncProfile for: " + L.username);
-                L.sync = L.cache.getInstantiator().instantiate();
-                if (L.username != null) {
-                    L.sync.setUsername(L.username);
+            if (loader.login) {
+                loader.cache.getLoggerService().debug("Creating a new SyncProfile for: " + loader.username);
+                loader.sync = loader.cache.getInstantiator().instantiate();
+                if (loader.username != null) {
+                    loader.sync.setUsername(loader.username);
                 }
-                L.sync.setId(L.uuid);
-                L.sync.setLoadingSource("New Profile");
-                L.sync.setCache(L.cache);
-                L.cache.save(L.sync);
+                loader.sync.setId(loader.uuid);
+                loader.sync.setLoadingSource("New Profile");
+                loader.sync.setCache(loader.cache);
+                loader.cache.save(loader.sync);
                 return;
             }
 
             // Assume some other kind of failure:
-            L.denyJoin = true;
-            L.joinDenyReason = StringUtil.t(EngineSource.getConfig().getString("profiles.messages.beforeDbConnection")
-                    .replace("{cacheName}", L.cache.getName()));
-            L.sync = null;
+            loader.denyJoin = true;
+            loader.joinDenyReason = StringUtil.t(EngineSource.getConfig().getString("profiles.messages.beforeDbConnection")
+                    .replace("{cacheName}", loader.cache.getName()));
+            loader.sync = null;
             return;
         }
 
         // We have a valid sync from Database
-        L.sync = o.get();
-        L.sync.setCache(L.cache);
+        loader.sync = o.get();
+        loader.sync.setCache(loader.cache);
 
         // For logins -> mark the NetworkProfile as loaded
-        if (L.login) {
-            NetworkProfile networkProfile = L.cache.getNetworkStore().getOrCreate(L.sync);
-            networkProfile.markLoaded(L.login);
-            L.cache.runAsync(() -> L.cache.getNetworkStore().save(networkProfile));
+        if (loader.login) {
+            NetworkProfile networkProfile = loader.cache.getNetworkStore().getOrCreate(loader.sync);
+            networkProfile.markLoaded(loader.login);
+            loader.cache.runAsync(() -> loader.cache.getNetworkStore().save(networkProfile));
 
             // Update their username
-            if (L.username != null) {
-                L.sync.setUsername(L.username);
+            if (loader.username != null) {
+                loader.sync.setUsername(loader.username);
             }
         }
     }

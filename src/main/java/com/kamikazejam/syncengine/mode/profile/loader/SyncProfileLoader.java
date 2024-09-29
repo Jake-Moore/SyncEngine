@@ -71,9 +71,12 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
     }
 
     @Override
-    public Optional<X> fetch(boolean saveToLocalCache) { // boolean saveToLocalCache doesn't matter on SyncProfiles
-        reset();
+    public Optional<X> fetch(boolean saveToLocalCache) {
+        // Reset previous state
+        denyJoin = false;
+        sync = null;
 
+        // If we are fetching (because of a login), check if we can cache
         if (login) {
             StorageService storageService = EngineSource.getStorageService();
             if (!storageService.canCache()) {
@@ -87,7 +90,7 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
         if (EngineSource.getSyncMode() == SyncMode.STANDALONE) {
             StandaloneProfileLoader.loadStandalone(this);
         }else {
-            NetworkedProfileLoader.loadNetworkNode(this);
+            NetworkedProfileLoader.loadNetworked(this);
         }
 
         // The above two methods will load the sync into this variable if it exists
@@ -112,11 +115,6 @@ public class SyncProfileLoader<X extends SyncProfile> implements SyncLoader<X> {
         if (cache.isCached(sync.getUniqueId())) {
             cache.uncache(sync.getUniqueId());
         }
-    }
-
-    public void reset() {
-        denyJoin = false;
-        sync = null;
     }
 
     public void login(@NotNull String username) {

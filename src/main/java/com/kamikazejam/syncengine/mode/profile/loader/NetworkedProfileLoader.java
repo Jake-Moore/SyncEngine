@@ -21,32 +21,32 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Class to help reduce the amount of code inside SyncProfileLoader
- * It just contains the cacheNetworkNode method in a dedicated class
+ * It just contains code to load a profile from a networked source
  */
 public class NetworkedProfileLoader {
-    protected static <X extends SyncProfile> void loadNetworkNode(SyncProfileLoader<X> L) {
+    protected static <X extends SyncProfile> void loadNetworked(SyncProfileLoader<X> loader) {
         ServerService serverService = EngineSource.getServerService();
         Preconditions.checkNotNull(serverService, "ServerService is null");
 
-        @Nullable Player player = Bukkit.getServer().getPlayer(L.uuid);
-        if (!L.login && player != null && player.isOnline()) {
-            // If they are not logging in (no handshake possible), and they are online:
+        @Nullable Player player = Bukkit.getServer().getPlayer(loader.uuid);
+        if (!loader.login && player != null && player.isOnline()) {
+            // If they are not logging in (no handshake needed), and they are online:
             //   we can just load from local
 
-            L.load(true);
+            loader.load(true);
             // Try to retrieve from the cache when they are online, skipping handshake logic.
-            if (L.sync != null) {
+            if (loader.sync != null) {
                 return;
             }
         }
 
         // Otherwise we need to check for handshakes
-        NetworkProfile networkProfile = EngineSource.getNetworkService().getOrCreate(L.uuid, L.username);
-        L.cache.getLoggerService().debug("NetworkLoad Sync " + L.uuid + " (L: " + L.login + ")");
+        NetworkProfile networkProfile = EngineSource.getNetworkService().getOrCreate(loader.uuid, loader.username);
+        loader.cache.getLoggerService().debug("NetworkLoad Sync " + loader.uuid + " (L: " + loader.login + ")");
 
         // If they are not on another server, load from local
         if (!networkProfile.isOnlineOtherServer()) {
-            L.load(networkProfile.isOnlineThisServer());
+            loader.load(networkProfile.isOnlineThisServer());
             return;
         }
 
@@ -55,19 +55,19 @@ public class NetworkedProfileLoader {
 
         // Target server isn't online, or there is no recent server -> load from database
         if (server == null || !server.isOnline()) {
-            L.cache.getLoggerService().debug("Target server '" + (server != null ? server.getName() : "n/a") + "' not online for handshake for " + L.uuid + ", loading from database");
-            L.load(false);
+            loader.cache.getLoggerService().debug("Target server '" + (server != null ? server.getName() : "n/a") + "' not online for handshake for " + loader.uuid + ", loading from database");
+            loader.load(false);
             return;
         }
 
         // We have a valid server -> handshake
         long msStart = System.currentTimeMillis();
-        L.cache.getLoggerService().debug("Starting handshake for " + L.uuid + " (login: " + L.login + ")");
+        loader.cache.getLoggerService().debug("Starting handshake for " + loader.uuid + " (login: " + loader.login + ")");
 
         // Perform the handshake
-        if (handshake(L, server, msStart)) {
+        if (handshake(loader, server, msStart)) {
             // Log how long it took
-            L.cache.getLoggerService().debug("Handshake complete for " + L.uuid + " (in " + (System.currentTimeMillis() - msStart) + "ms)");
+            loader.cache.getLoggerService().debug("Handshake complete for " + loader.uuid + " (in " + (System.currentTimeMillis() - msStart) + "ms)");
         }
     }
 

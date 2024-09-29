@@ -40,6 +40,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This class manages the synchronization between a bukkit {@link Player} and their {@link SyncProfile} objects.<br>
+ * Its primary purpose it to listen to joins/quits and ensure handshakes are completed as players swap between servers.
+ */
 @SuppressWarnings({"unused", "UnstableApiUsage"})
 public class ProfileListener implements Listener {
 
@@ -106,7 +110,7 @@ public class ProfileListener implements Listener {
         }
 
         // Mark loaded (only after all caches have been initialized and all handshakes have been finished)
-        networkProfile.markLoaded(true);
+        networkProfile.markLoaded(true);  // Also sets online to true
         networkProfile.setUUID(uniqueId);       // ensure valid and up-to-date data
         networkProfile.setUsername(username);   // ensure valid and up-to-date data
         networkProfile.markSaved();
@@ -118,6 +122,12 @@ public class ProfileListener implements Listener {
         EngineSource.getNetworkService().debug("Player " + username + " (" + uniqueId + ") marked as loaded in " + (System.currentTimeMillis() - ms) + "ms");
     }
 
+    /**
+     * If the player is online on another server, validate that they are actually online there.<br>
+     * If the validation fails, update the {@link NetworkProfile} to be offline.<br>
+     * Otherwise, do nothing and allow code to continue.
+     * @throws Exception if an error occurs while completing the swap validation {@link CompletableFuture}
+     */
     private void validateSwap(NetworkProfile networkProfile) throws Exception {
         if (!networkProfile.isOnlineOtherServer()) { return; }
 
@@ -157,7 +167,6 @@ public class ProfileListener implements Listener {
             if (c instanceof SyncProfileCache<?>) { caches.add((SyncProfileCache<X>) c); }
         });
         AsyncCachesExecutor<SyncProfileCache<X>> executor = new AsyncCachesExecutor<>(caches, (cache) -> {
-            long ms2 = System.currentTimeMillis();
             SyncProfileLoader<X> loader = cache.loader(uniqueId);
             loader.login(username);
             loader.fetch(true);
