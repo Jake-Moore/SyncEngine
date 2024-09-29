@@ -3,7 +3,6 @@ package com.kamikazejam.syncengine;
 import com.kamikazejam.kamicommon.KamiPlugin;
 import com.kamikazejam.kamicommon.SpigotUtilProvider;
 import com.kamikazejam.kamicommon.configuration.spigot.KamiConfig;
-import com.kamikazejam.kamicommon.util.Txt;
 import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
 import com.kamikazejam.kamicommon.yaml.standalone.YamlUtil;
 import com.kamikazejam.syncengine.base.mode.StorageMode;
@@ -13,7 +12,7 @@ import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
 import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
 import com.kamikazejam.syncengine.mode.profile.network.handshake.NetworkSwapService;
-import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
+import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfileService;
 import com.kamikazejam.syncengine.server.ServerService;
 import lombok.Getter;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,13 +28,13 @@ public class EngineSource {
     private static boolean enabled = false;
     @Getter private static long onEnableTime = 0;
     private static SyncEngineCommand command;
+
+    // Modes
     @Getter private static SyncMode syncMode;
     @Getter private static StorageMode storageMode;
+    // Server Identification
     @Getter private static String syncServerId;
     @Getter private static String syncServerGroup;
-    @Getter private static StorageService storageService;
-    @Getter private static NetworkProfileStore networkStore;
-    private static @Nullable NetworkSwapService swapService;
 
     /**
      * @return true IFF a plugin source was NEEDED and used for registration
@@ -57,11 +56,7 @@ public class EngineSource {
         // Load Plugin Modes
         syncMode = SyncMode.valueOf(getConfig().getString("mode"));
         storageMode = syncMode.getStorageMode(getConfig());
-        info("Running in " + Txt.getNicedEnum(syncMode) + " mode with " + Txt.getNicedEnum(storageMode) + " storage.");
-        storageService = storageMode.getStorageService();
-
-        // Load Network Store
-        networkStore = syncMode.getNetworkStore();
+        info("Running in " + syncMode + " mode with " + storageMode + " storage.");
 
         // Load Sync ID
         KamiConfig syncConf = new KamiConfig(plugin, new File(plugin.getDataFolder(), "syncengine-server.yml"), true);
@@ -79,7 +74,7 @@ public class EngineSource {
         getSwapService();
 
         // Load Commands
-        command = new SyncEngineCommand(getServerService());
+        command = new SyncEngineCommand();
         command.registerCommand(plugin);
 
         // Register ProfileListener
@@ -157,6 +152,10 @@ public class EngineSource {
         return getConfig().getBoolean("debug", false);
     }
 
+    // --------------------------------------------------------------------------------------- //
+    //                                  Service Accessors                                      //
+    // --------------------------------------------------------------------------------------- //
+
     public static @Nullable RedisService getRedisService() {
         return syncMode.getRedisService();
     }
@@ -166,10 +165,14 @@ public class EngineSource {
     }
 
     public static @NotNull NetworkSwapService getSwapService() {
-        if (swapService == null) {
-            swapService = new NetworkSwapService();
-            swapService.start();
-        }
-        return swapService;
+        return syncMode.getSwapService();
+    }
+
+    public static @NotNull NetworkProfileService getNetworkService() {
+        return syncMode.getNetworkService();
+    }
+
+    public static @NotNull StorageService getStorageService() {
+        return storageMode.getStorageService();
     }
 }

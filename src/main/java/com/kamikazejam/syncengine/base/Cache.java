@@ -13,7 +13,7 @@ import com.kamikazejam.syncengine.mode.object.ObjectCache;
 import com.kamikazejam.syncengine.mode.profile.ProfileCache;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
-import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
+import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfileService;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.*;
 
@@ -252,7 +252,7 @@ public interface Cache<K, X extends Sync<K>> extends Service {
     boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async);
 
     @NotNull
-    NetworkProfileStore getNetworkStore();
+    NetworkProfileService getNetworkStore();
 
     @NotNull
     NetworkProfile getNetworked(@NotNull UUID key);

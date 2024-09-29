@@ -294,7 +294,7 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
         cache(sync);
 
         // Require a NetworkProfile for saving in NETWORK_NODE mode
-        NetworkProfile np = EngineSource.getNetworkStore().getOrCreate(sync);
+        NetworkProfile np = EngineSource.getNetworkService().getOrCreate(sync);
 
         // If the NetworkProfile is online on this server, then we can save to mongo and update the NetworkProfile
         boolean sameSyncServerId = EngineSource.getSyncServerId().equalsIgnoreCase(np.getLastSeenServer());
@@ -311,7 +311,7 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
             }
 
             // We are saving a SyncProfile on the same server as the Player, update their NetworkProfile
-            if (EngineSource.getNetworkStore().save(np)) {
+            if (EngineSource.getNetworkService().save(np)) {
                 return true;
             } else {
                 loggerService.info("Failed to save profile " + sync.getUniqueId() + ": Couldn't save network profile (but saved normal profile)");

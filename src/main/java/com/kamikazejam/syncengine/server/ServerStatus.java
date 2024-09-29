@@ -6,23 +6,22 @@ import java.util.Arrays;
 import java.util.List;
 
 @Getter
-public enum ServerEvent {
+public enum ServerStatus {
 
     JOIN("sync-server-join"),
     PING("sync-server-ping"),
     QUIT("sync-server-quit"),
-    UPDATE("sync-server-update-name"),
     ;
 
     private final String channel;
-    public static final ServerEvent[] CACHE = values();
+    public static final ServerStatus[] CACHE = values();
 
-    ServerEvent(String channel) {
+    ServerStatus(String channel) {
         this.channel = channel;
     }
 
-    public static ServerEvent fromChannel(String msg) {
-        for (ServerEvent e : values()) {
+    public static ServerStatus fromChannel(String msg) {
+        for (ServerStatus e : CACHE) {
             if (e.channel.equalsIgnoreCase(msg)) {
                 return e;
             }
@@ -34,7 +33,7 @@ public enum ServerEvent {
 
     public static List<String> getChannels() {
         if (eventsCache == null) {
-            eventsCache = Arrays.stream(CACHE).map(ServerEvent::getChannel).toList();
+            eventsCache = Arrays.stream(CACHE).map(ServerStatus::getChannel).toList();
         }
         return eventsCache;
     }

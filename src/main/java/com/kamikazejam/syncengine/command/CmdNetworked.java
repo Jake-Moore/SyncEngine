@@ -29,9 +29,9 @@ public class CmdNetworked extends KamiCommand {
 
         NetworkProfile profile;
         if (target.getName() == null) {
-            profile = EngineSource.getNetworkStore().getOrCreate(uuid);
+            profile = EngineSource.getNetworkService().getOrCreate(uuid);
         }else {
-            profile = EngineSource.getNetworkStore().getOrCreate(uuid, target.getName());
+            profile = EngineSource.getNetworkService().getOrCreate(uuid, target.getName());
         }
 
         msg(sender, ("&7***** &6NetworkProfile: " + uuid + " &7*****"));

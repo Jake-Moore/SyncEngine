@@ -15,7 +15,7 @@ import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
 import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
-import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
+import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfileService;
 import com.kamikazejam.syncengine.util.SyncFileLogger;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -395,8 +395,8 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 
     @Override
     @NotNull
-    public final NetworkProfileStore getNetworkStore() {
-        return EngineSource.getNetworkStore();
+    public final NetworkProfileService getNetworkStore() {
+        return EngineSource.getNetworkService();
     }
 
     @Override

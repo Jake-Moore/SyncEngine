@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class CmdDatabases extends KamiCommand {
     public CmdDatabases() {
-        addAliases("databases");
+        addAliases("databases", "database");
 
         addRequirements(RequirementHasPerm.get("syncengine.command.databases"));
     }

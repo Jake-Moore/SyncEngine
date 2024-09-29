@@ -3,7 +3,6 @@ package com.kamikazejam.syncengine.server;
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.redis.RedisMultiChannel;
 import com.kamikazejam.syncengine.EngineSource;
-import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
@@ -14,9 +13,8 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashSet;
+import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -24,22 +22,21 @@ import java.util.concurrent.ConcurrentMap;
 @Getter
 public class ServerService extends LoggerService implements Runnable, Service {
 
-    public static final long ASSUME_OFFLINE_SECONDS = 60;
-    public static final long PING_FREQUENCY_SECONDS = 30;
+    public static final long ASSUME_OFFLINE_SECONDS = 30;
+    public static final long PING_FREQUENCY_SECONDS = 5;
 
     private final JavaPlugin plugin;
     private final SyncServer thisServer;
-    // Map<DbName, List<ServerName>> // names in the list are Case SENSITIVE
-    private final ConcurrentMap<String, Set<String>> dbNameServersMap = new ConcurrentHashMap<>();
+
+    // The list of all externally connected servers (should also contain thisServer)
     // Map<ServerName, SyncServer>
     private final ConcurrentMap<String, SyncServer> syncServerMap = new ConcurrentHashMap<>(); // Case SENSITIVE
 
-    private ServerPublisher publisher = null;
     private BukkitTask pingTask = null;
     @Getter
     private boolean running = false;
     @Getter
-    private RedisMultiChannel<SyncServerPacket> channel = null;
+    private RedisMultiChannel<SyncServerPacket> multiChannel = null;
 
     public ServerService() {
         this.plugin = EngineSource.get();
@@ -50,15 +47,14 @@ public class ServerService extends LoggerService implements Runnable, Service {
     public boolean start() {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService == null) {
+            EngineSource.get().getColorLogger().warn("ServerService: RedisService is null, not starting ServerService");
             // Do nothing if we don't have a RedisService (i.e. we are not NETWORKED)
             return true;
         }
 
         try {
-            this.publisher = new ServerPublisher(this);
-
             boolean sub = subscribe(redisService);
-            SyncEngineAPI.getCaches().forEach((name, cache) -> this.publisher.publishJoin(cache.getDatabaseName()));
+            ServerPublisher.publish(this, ServerStatus.JOIN);
             this.pingTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this, (PING_FREQUENCY_SECONDS * 20), (PING_FREQUENCY_SECONDS * 20));
             running = true;
             return sub;
@@ -70,67 +66,51 @@ public class ServerService extends LoggerService implements Runnable, Service {
 
     // Require a RedisService to call this
     private boolean subscribe(@NotNull RedisService redis) {
-        if (this.channel == null) {
-            this.channel = redis.getApi().registerMultiChannel(SyncServerPacket.class, ServerEvent.getChannels().toArray(new String[0]));
+        if (this.multiChannel == null) {
+            this.multiChannel = redis.getApi().registerMultiChannel(SyncServerPacket.class, ServerStatus.getChannels().toArray(new String[0]));
         }
 
-        channel.subscribe((c, packet) -> {
-            ServerEvent event = ServerEvent.fromChannel(c);
+        multiChannel.subscribe((c, packet) -> {
+            ServerStatus event = ServerStatus.fromChannel(c);
             if (event == null) { return; }
 
-            // Check that this redis message is for us
+            // Check that this redis message is for us (same group)
             if (!packet.getSyncGroup().equalsIgnoreCase(EngineSource.getSyncServerGroup())) { return; }
 
-            if (event.equals(ServerEvent.JOIN)) {
-                handleJoin(packet.getDbName(), packet.getSyncID(), packet.getSyncGroup());
-            } else if (event.equals(ServerEvent.QUIT)) {
-                handleQuit(packet.getDbName(), packet.getSyncID());
-            } else if (event.equals(ServerEvent.PING)) {
-                handlePing(packet.getDbName(), packet.getSyncID(), packet.getSyncGroup());
+            if (event.equals(ServerStatus.JOIN)) {
+                handleJoin(packet.getSyncID());
+            } else if (event.equals(ServerStatus.QUIT)) {
+                handleQuit(packet.getSyncID());
+            } else if (event.equals(ServerStatus.PING)) {
+                handlePing(packet.getSyncID());
             }
         });
         return true;
     }
 
     @NotNull
-    public Set<String> getServers(@NotNull String dbName) {
-        // Add thisServer as a server connected to this db
-        Set<String> servers = new HashSet<>();
-        servers.add(thisServer.getName());
-        servers.addAll(dbNameServersMap.getOrDefault(dbName, new HashSet<>()));
-        return servers;
+    public Collection<SyncServer> getSyncServers() {
+        return syncServerMap.values();
     }
 
+    /**
+     * Register a server as a part of the same SyncGroup as thisServer<br>
+     * It will be cached in the syncServerMap, and should receive pings every few seconds
+     */
     @NotNull
-    public Set<SyncServer> getSyncServers(@NotNull String dbName) {
-        Set<SyncServer> syncServers = new HashSet<>();
-        getServers(dbName).forEach((serverName) -> {
-            SyncServer server = syncServerMap.getOrDefault(serverName, null);
-            if (server == null) {
-                Bukkit.getLogger().warning("[ServerService] Could not find Server: " + serverName + " in dbMap: " + dbName);
-                return;
-            }
-            syncServers.add(server);
-        });
-        return syncServers;
-    }
-
-    @NotNull
-    public SyncServer register(@NotNull String dbName, @NotNull String name, @NotNull String group, boolean online) {
+    public SyncServer register(@NotNull String name, boolean online) {
         Preconditions.checkNotNull(name);
-        // Update the dbMap to include this server
-        Set<String> servers = getServers(dbName);
-        servers.add(name);
-        dbNameServersMap.put(dbName, servers);
+        final String serverGroup = EngineSource.getSyncServerGroup();
 
         // Case 1 - ThisServer - edit the local object
         if (name.equalsIgnoreCase(thisServer.getName())) {
             thisServer.setOnline(online);
-            thisServer.setGroup(group);
+            thisServer.setGroup(serverGroup);
             return thisServer;
         }
+
         // Case 2 - other server - create a new object and store it
-        SyncServer server = new SyncServer(name, group, System.currentTimeMillis(), online);
+        SyncServer server = new SyncServer(name, serverGroup, System.currentTimeMillis(), online);
         syncServerMap.put(name, server);
         return server;
     }
@@ -145,21 +125,15 @@ public class ServerService extends LoggerService implements Runnable, Service {
         return Optional.ofNullable(syncServerMap.get(name));
     }
 
-    void handlePing(@NotNull String dbName, @NotNull String serverName, @NotNull String serverGroup) {
-        if (syncServerMap.containsKey(serverName)) {
-            syncServerMap.get(serverName).setLastPing(System.currentTimeMillis());
-        } else {
-            this.handleJoin(dbName, serverName, serverGroup);
-        }
-    }
+    private void handleJoin(@NotNull String serverName) {
+        final String serverGroup = EngineSource.getSyncServerGroup();
+        this.debug("Server: " + serverName + " Joined Group: " + serverGroup + " (adding)");
 
-    void handleJoin(@NotNull String dbName, @NotNull String serverName, @NotNull String serverGroup) {
         if (syncServerMap.containsKey(serverName)) {
             syncServerMap.get(serverName).setOnline(true);
             syncServerMap.get(serverName).setLastPing(System.currentTimeMillis());
         } else {
-            this.debug("Server: " + serverName + " Started for DB: " + dbName + " (adding)");
-            this.register(dbName, serverName, serverGroup, true);
+            this.register(serverName, true);
 
             // Send other servers a ping of this server, so that this existing server
             //  can be added to the new 'joining' server's list
@@ -167,14 +141,24 @@ public class ServerService extends LoggerService implements Runnable, Service {
         }
     }
 
-    void handleQuit(@NotNull String dbName, @NotNull String serverName) {
+    private void handlePing(@NotNull String serverName) {
         if (syncServerMap.containsKey(serverName)) {
-            this.debug("Server: " + serverName + " Stopped for DB: " + dbName + " (removing)");
+            syncServerMap.get(serverName).setOnline(true);
+            syncServerMap.get(serverName).setLastPing(System.currentTimeMillis());
+        } else {
+            this.handleJoin(serverName);
+        }
+    }
+
+    private void handleQuit(@NotNull String serverName) {
+        final String serverGroup = EngineSource.getSyncServerGroup();
+        if (syncServerMap.containsKey(serverName)) {
+            this.debug("Server: " + serverName + " Quit Group: " + serverGroup + " (removing)");
             syncServerMap.get(serverName).setOnline(false);
         }
     }
 
-    void handleUpdateName(@NotNull String dbName, String oldName, String serverName) {
+    void handleUpdateName(String oldName, String serverName) {
         if (syncServerMap.containsKey(oldName)) {
             SyncServer server = syncServerMap.get(oldName);
             server.setName(serverName);
@@ -184,7 +168,9 @@ public class ServerService extends LoggerService implements Runnable, Service {
     }
 
     private void doPing() {
-        SyncEngineAPI.getCaches().forEach((name, cache) -> this.publisher.publishPing(cache.getDatabaseName()));
+        // Compile a list of all database names with caches connected
+        ServerPublisher.publish(this, ServerStatus.PING);
+
         this.thisServer.setLastPing(System.currentTimeMillis());
         this.thisServer.setOnline(true);
     }
@@ -195,8 +181,7 @@ public class ServerService extends LoggerService implements Runnable, Service {
                 this.pingTask.cancel();
             }
 
-            SyncEngineAPI.getCaches().forEach((name, cache) -> this.publisher.publishQuit(cache.getDatabaseName(), true));
-            this.publisher = null;
+            ServerPublisher.publish(this, ServerStatus.QUIT);
             running = false;
             return true;
         } catch (Exception ex) {
@@ -210,14 +195,13 @@ public class ServerService extends LoggerService implements Runnable, Service {
         this.doPing();
 
         this.syncServerMap.forEach((name, server) -> {
-            if (!name.equalsIgnoreCase(this.thisServer.getName())) {
-                if (server.isOnline()) {
-                    long pingExpiredAt = System.currentTimeMillis() - (ServerService.ASSUME_OFFLINE_SECONDS * 1000);
-                    if (server.getLastPing() <= pingExpiredAt) {
-                        // Assume they're offline
-                        server.setOnline(false);
-                    }
-                }
+            if (name.equalsIgnoreCase(this.thisServer.getName())) { return; }
+            if (!server.isOnline()) { return; }
+
+            long pingExpiredAt = System.currentTimeMillis() - (ServerService.ASSUME_OFFLINE_SECONDS * 1000L);
+            if (server.getLastPing() <= pingExpiredAt) {
+                // Assume they're offline
+                server.setOnline(false);
             }
         });
     }

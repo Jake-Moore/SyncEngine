@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Only enables if there is a RedisService to use.
-
  */
 @SuppressWarnings({"DuplicatedCode", "unused"})
 public class NetworkSwapService extends LoggerService implements Service {

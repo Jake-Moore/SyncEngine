@@ -1,7 +1,8 @@
-package com.kamikazejam.syncengine.mode.profile.network.profile.store;
+package com.kamikazejam.syncengine.mode.profile.network.profile.impl;
 
 import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfileService;
 import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.ApiStatus;
@@ -14,9 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * The Standalone NetworkProfileStore implementation
+ * The Standalone NetworkProfileService implementation
  */
-public class NetworkProfileLocal extends NetworkProfileStore {
+public class NetworkProfileLocal extends NetworkProfileService {
 
     private final ConcurrentMap<UUID, NetworkProfile> localCache = new ConcurrentHashMap<>();
 

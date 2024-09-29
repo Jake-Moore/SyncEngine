@@ -4,9 +4,10 @@ import com.kamikazejam.kamicommon.configuration.spigot.KamiConfig;
 import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
-import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileLocal;
-import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileRedis;
-import com.kamikazejam.syncengine.mode.profile.network.profile.store.NetworkProfileStore;
+import com.kamikazejam.syncengine.mode.profile.network.handshake.NetworkSwapService;
+import com.kamikazejam.syncengine.mode.profile.network.profile.impl.NetworkProfileLocal;
+import com.kamikazejam.syncengine.mode.profile.network.profile.impl.NetworkProfileRedis;
+import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfileService;
 import com.kamikazejam.syncengine.server.ServerService;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
@@ -28,9 +29,12 @@ public enum SyncMode {
     //                           MODE SERVICE MANAGEMENT                            //
     // ---------------------------------------------------------------------------- //
     public void enableServices() {
+        EngineSource.get().getColorLogger().info("Enabling services for " + this + " mode...");
+        // !! Enable redis & server services before others !!
         this.getRedisService();
         this.getServerService();
-        this.getNetworkStore();
+        this.getSwapService();
+        this.getNetworkService();
     }
 
     private RedisService redisService = null;
@@ -40,6 +44,7 @@ public enum SyncMode {
         }
 
         if (redisService == null) {
+            EngineSource.get().getColorLogger().info("Enabling RedisService...");
             redisService = new RedisService();
             if (!redisService.start()) {
                 EngineSource.get().getLogger().severe(StringUtil.t("&cFailed to start RedisService, shutting down..."));
@@ -56,6 +61,7 @@ public enum SyncMode {
         }
 
         if (serverService == null) {
+            EngineSource.get().getColorLogger().warn("Enabling ServerService..."); // TODO INFO LEVEL
             serverService = new ServerService();
             if (!serverService.start()) {
                 EngineSource.get().getLogger().severe(StringUtil.t("&cFailed to start ServerService, shutting down..."));
@@ -65,16 +71,32 @@ public enum SyncMode {
         return serverService;
     }
 
-    private NetworkProfileStore networkStore = null;
-    public @NotNull NetworkProfileStore getNetworkStore() {
-        if (networkStore == null) {
-            if (this == NETWORKED) {
-                networkStore = new NetworkProfileRedis();
-            } else {
-                networkStore = new NetworkProfileLocal();
+    private NetworkSwapService swapService = null;
+    public @NotNull NetworkSwapService getSwapService() {
+        // SwapService was written to ignore calls when not in networked
+        // Therefore we can always safely create and return the service
+        if (swapService == null) {
+            EngineSource.get().getColorLogger().info("Enabling NetworkSwapService...");
+            swapService = new NetworkSwapService();
+            if (!swapService.start()) {
+                EngineSource.get().getLogger().severe(StringUtil.t("&cFailed to start NetworkSwapService, shutting down..."));
+                Bukkit.shutdown();
             }
         }
-        return networkStore;
+        return swapService;
+    }
+
+    private NetworkProfileService networkService = null;
+    public @NotNull NetworkProfileService getNetworkService() {
+        if (networkService == null) {
+            EngineSource.get().getColorLogger().info("Enabling NetworkStore...");
+            if (this == NETWORKED) {
+                networkService = new NetworkProfileRedis();
+            } else {
+                networkService = new NetworkProfileLocal();
+            }
+        }
+        return networkService;
     }
 
     public void disableServices() {
@@ -82,9 +104,9 @@ public enum SyncMode {
             serverService.shutdown();
             serverService = null;
         }
-        if (networkStore != null) {
-            networkStore.shutdown();
-            networkStore = null;
+        if (networkService != null) {
+            networkService.shutdown();
+            networkService = null;
         }
         // Shutdown redis last (after final messages are sent)
         if (redisService != null) {

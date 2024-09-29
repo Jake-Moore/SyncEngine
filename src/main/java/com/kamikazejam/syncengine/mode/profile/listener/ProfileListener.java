@@ -77,7 +77,7 @@ public class ProfileListener implements Listener {
 
         // Trigger a NetworkSwapHandshake in order to let the other server know about the swap
         //  and to validate that the player is on the lastSeenServer (if set in NetworkProfile)
-        NetworkProfile networkProfile = EngineSource.getNetworkStore().getOrCreate(uniqueId, username);
+        NetworkProfile networkProfile = EngineSource.getNetworkService().getOrCreate(uniqueId, username);
         try {
             validateSwap(networkProfile);
         }catch (Throwable t) {
@@ -113,9 +113,9 @@ public class ProfileListener implements Listener {
 
         // Save async to prevent unnecessary blocking on join
         Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () ->
-                EngineSource.getNetworkStore().save(networkProfile)
+                EngineSource.getNetworkService().save(networkProfile)
         );
-        EngineSource.getNetworkStore().debug("Player " + username + " (" + uniqueId + ") marked as loaded in " + (System.currentTimeMillis() - ms) + "ms");
+        EngineSource.getNetworkService().debug("Player " + username + " (" + uniqueId + ") marked as loaded in " + (System.currentTimeMillis() - ms) + "ms");
     }
 
     private void validateSwap(NetworkProfile networkProfile) throws Exception {
@@ -188,7 +188,7 @@ public class ProfileListener implements Listener {
         });
 
         // Call the NetworkProfileLoginEvent if this is the first join for this Sync-Group
-        NetworkProfile profile = EngineSource.getNetworkStore().getOrCreate(player);
+        NetworkProfile profile = EngineSource.getNetworkService().getOrCreate(player);
         if (profile.isFirstJoinToSyncGroup()) {
             NetworkProfileLoginEvent e = new NetworkProfileLoginEvent(player, profile);
             Bukkit.getServer().getPluginManager().callEvent(e);
@@ -208,11 +208,11 @@ public class ProfileListener implements Listener {
 
         // Mark the NetworkProfile as offline IFF the player is not swapping servers
         boolean swappingServers = swapMap.asMap().containsKey(player.getUniqueId());
-        NetworkProfile profile = EngineSource.getNetworkStore().getOrCreate(player);
+        NetworkProfile profile = EngineSource.getNetworkService().getOrCreate(player);
         profile.markUnloaded(swappingServers);
         profile.markSaved();
         Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () ->
-                EngineSource.getNetworkStore().save(profile)
+                EngineSource.getNetworkService().save(profile)
         );
         swapMap.invalidate(player.getUniqueId());
 

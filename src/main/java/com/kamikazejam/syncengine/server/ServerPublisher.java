@@ -10,86 +10,71 @@ import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Utility class for publishing server statues to the network
+ */
 public class ServerPublisher {
 
-    private final ServerService server;
-    public ServerPublisher(ServerService server) {
-        this.server = server;
-    }
-
-    public void publishPing(@NotNull String dbName) {
+    public static void publish(@NotNull ServerService service, @NotNull ServerStatus status) {
         @Nullable RedisService redisService = EngineSource.getRedisService();
         if (redisService == null) {
             // Do nothing, we aren't running NETWORKED
             return;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
-            try {
-                String syncID = server.getThisServer().getName();
-                String syncGroup = server.getThisServer().getGroup();
+        // Ensure validity of ServerService
+        Preconditions.checkNotNull(service, "Server service");
+        Preconditions.checkNotNull(service.getThisServer(), "thisServer");
+        Preconditions.checkNotNull(service.getThisServer().getName(), "thisServer#name");
 
-                SyncServerPacket packet = SyncServerPacket.of(dbName, syncID, syncGroup);
-                server.getChannel().publishAsync(ServerEvent.PING.getChannel(), packet);
+        // Handle individual statuses
+        switch (status) {
+            case JOIN -> Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
+                try {
+                    String syncID = service.getThisServer().getName();
+                    String syncGroup = service.getThisServer().getGroup();
 
-                // Can be Async
-                Bukkit.getPluginManager().callEvent(new SyncServerPublishPingEvent(syncID, syncGroup));
+                    SyncServerPacket packet = SyncServerPacket.of(syncID, syncGroup);
+                    EngineSource.get().getColorLogger().severe("ServerPublisher: Publishing JOIN event");
+                    service.getMultiChannel().publishAsync(ServerStatus.JOIN.getChannel(), packet);
 
-            } catch (Exception ex) {
-                redisService.getLogger().info(ex, "ServerService ServerPublisher: Error publishing PING event");
+                    Bukkit.getPluginManager().callEvent(new SyncServerPublishJoinEvent(syncID, syncGroup));
+
+                } catch (Exception ex) {
+                    redisService.getLogger().info(ex, "ServerService ServerPublisher: Error publishing JOIN event");
+                }
+            });
+            case PING -> Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
+                try {
+                    String syncID = service.getThisServer().getName();
+                    String syncGroup = service.getThisServer().getGroup();
+
+                    SyncServerPacket packet = SyncServerPacket.of(syncID, syncGroup);
+                    EngineSource.get().getColorLogger().severe("ServerPublisher: Publishing PING event");
+                    service.getMultiChannel().publishAsync(ServerStatus.PING.getChannel(), packet);
+
+                    Bukkit.getPluginManager().callEvent(new SyncServerPublishPingEvent(syncID, syncGroup));
+
+                } catch (Exception ex) {
+                    redisService.getLogger().info(ex, "ServerService ServerPublisher: Error publishing PING event");
+                }
+            });
+            case QUIT -> {
+                try {
+                    // Run sync to ensure publish completes before shutdown
+                    String syncID = service.getThisServer().getName();
+                    String syncGroup = service.getThisServer().getGroup();
+
+                    SyncServerPacket packet = SyncServerPacket.of(syncID, syncGroup);
+                    EngineSource.get().getColorLogger().severe("ServerPublisher: Publishing QUIT event");
+                    service.getMultiChannel().publishSync(ServerStatus.QUIT.getChannel(), packet);
+
+                    Bukkit.getPluginManager().callEvent(new SyncServerPublishQuitEvent(syncID, syncGroup));
+
+                } catch (Exception ex) {
+                    service.info(ex, "ServerService ServerPublisher: Error publishing QUIT event");
+                }
             }
-        });
-    }
-
-    public void publishJoin(@NotNull String dbName) {
-        @Nullable RedisService redisService = EngineSource.getRedisService();
-        if (redisService == null) {
-            // Do nothing, we aren't running NETWORKED
-            return;
-        }
-
-        Preconditions.checkNotNull(server, "Server service");
-        Preconditions.checkNotNull(server.getThisServer(), "thisServer");
-        Preconditions.checkNotNull(server.getThisServer().getName(), "thisServer#name");
-
-        Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () -> {
-            try {
-                String syncID = server.getThisServer().getName();
-                String syncGroup = server.getThisServer().getGroup();
-
-                SyncServerPacket packet = SyncServerPacket.of(dbName, syncID, syncGroup);
-                server.getChannel().publishAsync(ServerEvent.JOIN.getChannel(), packet);
-
-                // Can be Async
-                Bukkit.getPluginManager().callEvent(new SyncServerPublishJoinEvent(syncID, syncGroup));
-
-            } catch (Exception ex) {
-                redisService.getLogger().info(ex, "ServerService ServerPublisher: Error publishing JOIN event");
-            }
-        });
-    }
-
-    // Sync Method
-    public void publishQuit(@NotNull String dbName, boolean callIsSync) {
-        EngineSource.info("Publishing QUIT event for server " + server.getThisServer().getName());
-
-        try {
-            // Run sync to ensure publish completes before shutdown
-            String syncID = server.getThisServer().getName();
-            String syncGroup = server.getThisServer().getGroup();
-
-            SyncServerPacket packet = SyncServerPacket.of(dbName, syncID, syncGroup);
-            server.getChannel().publishSync(ServerEvent.QUIT.getChannel(), packet);
-
-            SyncServerPublishQuitEvent event = new SyncServerPublishQuitEvent(syncID, syncGroup);
-            if (callIsSync) {
-                Bukkit.getPluginManager().callEvent(event);
-            } else {
-                Bukkit.getScheduler().runTask(EngineSource.get(), () -> Bukkit.getPluginManager().callEvent(event));
-            }
-
-        } catch (Exception ex) {
-            server.info(ex, "ServerService ServerPublisher: Error publishing QUIT event");
         }
     }
 }

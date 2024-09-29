@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.mode.profile.network.profile.store;
+package com.kamikazejam.syncengine.mode.profile.network.profile;
 
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
@@ -6,7 +6,6 @@ import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.loader.NetworkedProfileLoader;
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -19,10 +18,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @SuppressWarnings("unused")
-public abstract class NetworkProfileStore extends LoggerService implements Service {
+public abstract class NetworkProfileService extends LoggerService implements Service {
 
     private boolean running = false;
-    public NetworkProfileStore() {}
+    public NetworkProfileService() {}
 
 
     // ----------------------------------------------------- //

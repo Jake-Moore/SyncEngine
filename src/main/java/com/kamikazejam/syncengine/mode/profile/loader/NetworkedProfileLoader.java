@@ -41,7 +41,7 @@ public class NetworkedProfileLoader {
         }
 
         // Otherwise we need to check for handshakes
-        NetworkProfile networkProfile = EngineSource.getNetworkStore().getOrCreate(L.uuid, L.username);
+        NetworkProfile networkProfile = EngineSource.getNetworkService().getOrCreate(L.uuid, L.username);
         L.cache.getLoggerService().debug("NetworkLoad Sync " + L.uuid + " (L: " + L.login + ")");
 
         // If they are not on another server, load from local
@@ -123,7 +123,7 @@ public class NetworkedProfileLoader {
             L.denyJoin = true;
             L.joinDenyReason = ChatColor.RED + "Timed out while loading your profile.  Please try again.";
             L.cache.getLoggerService().debug("Handshake timed out for " + L.uuid);
-            EngineSource.getNetworkStore().verifyPlayerOrigin(L.uuid, L.username, server);
+            EngineSource.getNetworkService().verifyPlayerOrigin(L.uuid, L.username, server);
             return false;
         }
     }

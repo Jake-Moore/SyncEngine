@@ -23,7 +23,7 @@ public class CmdIsOnline extends KamiCommand {
     public void perform() throws KamiCommonException {
         OfflinePlayer player = readArg();
         String name = IdUtilLocal.getName(player.getUniqueId());
-        NetworkProfile profile = EngineSource.getNetworkStore().getOrCreate(player.getUniqueId(), name);
+        NetworkProfile profile = EngineSource.getNetworkService().getOrCreate(player.getUniqueId(), name);
 
         sender.sendMessage(StringUtil.t("&7***** &6NetworkProfile: " + player.getUniqueId() + " &7*****"));
         sender.sendMessage(StringUtil.t("&7Username: " + name));
