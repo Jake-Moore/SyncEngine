@@ -15,6 +15,7 @@ import com.kamikazejam.syncengine.base.save.ProfileAutoSaveTask;
 import com.kamikazejam.syncengine.base.store.StoreDatabase;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
+import com.kamikazejam.syncengine.base.update.UpdateTask;
 import com.kamikazejam.syncengine.mode.profile.handshake.ProfileHandshakeService;
 import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
 import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
@@ -306,7 +307,7 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
             // If we are saving a SyncProfile from a different server from the one that has the Player
             //   then we should notify that other server that data has changed, so it can pull changes
             if (!sameSyncServerId) {
-                pushUpdate(sync, true, true);
+                pushUpdate(sync.getId(), UpdateTask.PULL_FROM_STORE, true);
                 return true;
             }
 

@@ -11,6 +11,7 @@ import com.kamikazejam.syncengine.base.index.IndexedField;
 import com.kamikazejam.syncengine.base.sync.CacheLoggerInstantiator;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.base.update.SyncUpdater;
+import com.kamikazejam.syncengine.base.update.UpdateTask;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
 import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
@@ -151,15 +152,17 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
 
 
     @Override
-    public boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async) {
+    public boolean pushUpdate(@NotNull K id, @NotNull UpdateTask task, boolean async) {
         if (!getUpdater().isEnabled()) {
             // Do nothing if the updater is not enabled (STANDALONE mode)
             return true;
         }
+        Preconditions.checkNotNull(id, "Sync Id cannot be null for pushUpdate");
+        @Nullable X sync = this.getFromCache(id).orElse(null);
 
-        Preconditions.checkNotNull(sync, "Sync cannot be null for pushUpdate");
-        loggerService.debug("PUSH " + keyToString(sync.getId()) + " (v" + sync.getVersion() + "): Force=" + forceLoad);
-        return getUpdater().pushUpdate(sync, forceLoad, async);
+        String ver = sync == null ? "null" : String.valueOf(sync.getVersion());
+        loggerService.debug("PUSH " + keyToString(id) + " (v" + ver + "): Task=" + task);
+        return getUpdater().pushUpdate(id, task, async);
     }
 
     @NotNull
@@ -241,9 +244,9 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         if (state == TriState.TRUE) {
             // Try async, but if we're not allowed to create an async task, just do it sync
             try {
-                pushUpdate(sync, true, true);
+                pushUpdate(sync.getId(), UpdateTask.PULL_FROM_STORE, true);
             } catch (IllegalPluginAccessException e) {
-                pushUpdate(sync, true, false);
+                pushUpdate(sync.getId(), UpdateTask.PULL_FROM_STORE, false);
             }
         }
         // NOT_SET is considered a success too
@@ -303,6 +306,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         getLocalStore().remove(key);
         getDatabaseStore().remove(key);
         this.invalidateIndexes(key, true);
+        this.pushUpdate(key, UpdateTask.DELETE_AND_INVALIDATE, true);
     }
 
     @Override
@@ -312,6 +316,7 @@ public abstract class SyncCache<K, X extends Sync<K>> implements Comparable<Sync
         getLocalStore().remove(sync);
         getDatabaseStore().remove(sync);
         this.invalidateIndexes(id, true);
+        this.pushUpdate(id, UpdateTask.DELETE_AND_INVALIDATE, true);
     }
 
     @Override

@@ -1,14 +1,15 @@
 package com.kamikazejam.syncengine.base.store;
 
 import com.kamikazejam.kamicommon.util.data.TriState;
+import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-@SuppressWarnings({"UnusedReturnValue", "rawtypes", "unused"})
-public interface StoreMethods<K, X extends Sync> {
+@SuppressWarnings({"UnusedReturnValue", "unused"})
+public interface StoreMethods<K, X extends Sync<K>> {
 
     /**
      * Retrieve a Sync from this store.
@@ -57,6 +58,13 @@ public interface StoreMethods<K, X extends Sync> {
      */
     @NotNull
     Iterable<K> getKeys();
+
+    /**
+     * Retrieve all Sync keys (in string form) from this store.
+     * Uses {@link com.kamikazejam.syncengine.base.Cache#keyToString(Object)} to convert keys to strings.
+     */
+    @NotNull
+    Iterable<String> getKeyStrings(@NotNull Cache<K, X> cache);
 
     /**
      * Clear all Syncs from this store. No Syncs are deleted, just removed from memory.

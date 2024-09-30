@@ -115,29 +115,40 @@ public abstract class SyncUpdater<K, X extends Sync<K>> implements Service {
             String sourceServer = packet.getSourceServer();
             String sourceGroup = packet.getSourceGroup();
             String identifierString = packet.getIdentifier();
-            boolean force = packet.isForceLoad();
+            UpdateTask task = packet.getTask();
             if (sourceServer == null || identifierString == null) {
                 cache.getLoggerService().info("Source Server or Identifier were null during receiveUpdateRequest in SyncUpdater for packet: " + packet.getIdentifier());
                 return;
             }
 
             // As long as the source server wasn't this one
-            if (sourceServer.equalsIgnoreCase(serverService.getThisServer().getName())) {
-                return;
-            }
+            if (sourceServer.equalsIgnoreCase(serverService.getThisServer().getName())) { return; }
             // And the sync group is the same
-            if (!sourceGroup.equalsIgnoreCase(serverService.getThisServer().getGroup())) {
-                return;
+            if (!sourceGroup.equalsIgnoreCase(serverService.getThisServer().getGroup())) { return; }
+
+            // Perform the desired task
+            final K identifier = cache.keyFromString(identifierString);
+            switch (task) {
+                case PULL_FROM_STORE:
+                    if (cache.isCached(identifier)) {
+                        // Using getFromDatabase triggers Sync.cacheCopy, as intended
+                        cache.runAsync(() -> cache.getFromDatabase(identifier, true).ifPresent(sync -> {
+                            cache.getLoggerService().debug("Received update request in SyncUpdater for " + cache.getName() + ":" + cache.keyToString(sync.getId()) + " version: " + sync.getVersion());
+                            cache.cache(sync);
+                        }));
+                    }
+                    break;
+                case DELETE_AND_INVALIDATE:
+                    // If receiving this message, another instance has deleted a Sync object
+                    // We need to invalidate any local copies, and remove it from the local store
+                    cache.getFromCache(identifier).ifPresent(sync -> {
+                        cache.getLoggerService().debug("Received invalidate request in SyncUpdater for " + cache.getName() + ":" + cache.keyToString(sync.getId()) + " version: " + sync.getVersion());
+                        sync.invalidate();
+                        cache.getLocalStore().remove(identifier);
+                    });
+                    break;
             }
 
-            final K identifier = cache.keyFromString(identifierString);
-            if (cache.isCached(identifier) || force) {
-                // Using getFromDatabase triggers Sync.cacheCopy, as intended
-                cache.runAsync(() -> cache.getFromDatabase(identifier, true).ifPresent(sync -> {
-                    cache.getLoggerService().debug("Received update request in SyncUpdater for " + cache.getName() + ":" + cache.keyToString(sync.getId()) + " version: " + sync.getVersion());
-                    cache.cache(sync);
-                }));
-            }
         } catch (IllegalPluginAccessException e) {
             if (!EngineSource.get().isEnabled()) {
                 return;
@@ -154,7 +165,7 @@ public abstract class SyncUpdater<K, X extends Sync<K>> implements Service {
     
 
     // Default: force=false, async=true
-    public final boolean pushUpdate(X sync, boolean force, boolean async) {
+    public final boolean pushUpdate(@NotNull K syncId, @NotNull UpdateTask task, boolean async) {
         @Nullable RedisService redis = EngineSource.getRedisService();
         @Nullable ServerService serverService = EngineSource.getServerService();
         if (redis == null || serverService == null) {
@@ -163,31 +174,31 @@ public abstract class SyncUpdater<K, X extends Sync<K>> implements Service {
         }
 
         try {
-            Preconditions.checkNotNull(sync, "Sync cannot be null in SyncUpdater (pushUpdate)");
-            UpdatePacket packet = createPacket(sync.getId(), force);
+            Preconditions.checkNotNull(syncId, "Sync Key cannot be null in SyncUpdater (pushUpdate)");
+            UpdatePacket packet = createPacket(syncId, task);
             packet.setForSyncUpdater(true);
             channel.publish(packet, !async);
             return true;
         } catch (IllegalPluginAccessException e) {
             // Try again sync
             if (async) {
-                return this.pushUpdate(sync, force, false);
+                return this.pushUpdate(syncId, task, false);
             }
             return false;
         } catch (Exception ex) {
-            cache.getLoggerService().info(ex, "Failed to push update from SyncUpdater for Sync: " + cache.keyToString(sync.getId()));
+            cache.getLoggerService().info(ex, "Failed to push update from SyncUpdater for Sync: " + cache.keyToString(syncId));
             return false;
         }
     }
 
-    private @NotNull UpdatePacket createPacket(K identifier, boolean forceLoad) {
+    private @NotNull UpdatePacket createPacket(@NotNull K identifier, @NotNull UpdateTask task) {
         ServerService serverService = Objects.requireNonNull(EngineSource.getServerService());
 
         return new UpdatePacket(
                 serverService.getThisServer().getGroup(),
                 serverService.getThisServer().getName(),
                 cache.keyToString(identifier),
-                forceLoad,
+                task,
                 false
         );
     }

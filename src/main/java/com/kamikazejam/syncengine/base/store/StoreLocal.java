@@ -2,6 +2,7 @@ package com.kamikazejam.syncengine.base.store;
 
 import com.google.common.base.Preconditions;
 import com.kamikazejam.kamicommon.util.data.TriState;
+import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.Sync;
 import com.kamikazejam.syncengine.util.SyncFileLogger;
 import lombok.Getter;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 @Getter
 public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K, X> {
@@ -74,6 +76,12 @@ public abstract class StoreLocal<K, X extends Sync<K>> implements StoreMethods<K
     @Override
     public Set<K> getKeys() {
         return this.localCache.keySet();
+    }
+
+    @NotNull
+    @Override
+    public Set<String> getKeyStrings(@NotNull Cache<K, X> cache) {
+        return this.localCache.keySet().stream().map(cache::keyToString).collect(Collectors.toSet());
     }
 
     @Override

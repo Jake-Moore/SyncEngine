@@ -116,6 +116,13 @@ public abstract class StoreDatabase<K, X extends Sync<K>> extends SyncStore<K, X
         return storageService.getKeys(cache);
     }
 
+    @NotNull
+    @Override
+    public Iterable<String> getKeyStrings(@NotNull Cache<K, X> cache) {
+        Iterator<K> keys = storageService.getKeys(cache).iterator();
+        return () -> new TransformingIterator<>(keys, cache::keyToString);
+    }
+
     @Override
     protected long size(Cache<K, X> cache) {
         return storageService.size(cache);

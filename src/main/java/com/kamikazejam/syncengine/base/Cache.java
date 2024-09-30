@@ -9,6 +9,7 @@ import com.kamikazejam.syncengine.base.store.StoreDatabase;
 import com.kamikazejam.syncengine.base.store.StoreLocal;
 import com.kamikazejam.syncengine.base.store.StoreMethods;
 import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
+import com.kamikazejam.syncengine.base.update.UpdateTask;
 import com.kamikazejam.syncengine.mode.object.ObjectCache;
 import com.kamikazejam.syncengine.mode.profile.ProfileCache;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
@@ -244,12 +245,12 @@ public interface Cache<K, X extends Sync<K>> extends Service {
      * Push (through the Redis network) an update of this Sync.
      * This is used internally to notify other servers of changes.
      *
-     * @param forceLoad If true, receiving servers are forced to load this Sync. If false, they will only load if they had it cached.
+     * @param task      The task to complete on the other servers.
      * @param async     If we should send the redis message asynchronously.
      * @return If the redis message could be sent.
      */
     @ApiStatus.Internal
-    boolean pushUpdate(@NotNull X sync, boolean forceLoad, boolean async);
+    boolean pushUpdate(@NotNull K key, @NotNull UpdateTask task, boolean async);
 
     @NotNull
     NetworkProfileService getNetworkStore();
