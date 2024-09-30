@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.mode.profile.network.profile;
+package com.kamikazejam.syncengine.networkprofile.service;
 
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
@@ -6,6 +6,7 @@ import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.loader.NetworkedProfileLoader;
+import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

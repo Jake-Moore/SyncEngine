@@ -1,6 +1,6 @@
 package com.kamikazejam.syncengine.event.profile;
 
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
 import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;

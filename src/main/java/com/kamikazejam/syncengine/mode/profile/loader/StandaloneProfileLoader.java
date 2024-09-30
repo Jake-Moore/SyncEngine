@@ -3,7 +3,7 @@ package com.kamikazejam.syncengine.mode.profile.loader;
 import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
 
 import java.util.Optional;
 

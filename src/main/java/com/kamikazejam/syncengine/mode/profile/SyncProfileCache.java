@@ -18,7 +18,7 @@ import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.base.update.UpdateTask;
 import com.kamikazejam.syncengine.mode.profile.handshake.ProfileHandshakeService;
 import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
 import com.kamikazejam.syncengine.mode.profile.store.ProfileStoreDatabase;
 import com.kamikazejam.syncengine.mode.profile.store.ProfileStoreLocal;
 import com.kamikazejam.syncengine.mode.profile.update.ProfileUpdater;

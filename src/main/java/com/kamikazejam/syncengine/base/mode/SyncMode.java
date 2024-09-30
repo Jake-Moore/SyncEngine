@@ -4,10 +4,10 @@ import com.kamikazejam.kamicommon.configuration.spigot.KamiConfig;
 import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
-import com.kamikazejam.syncengine.mode.profile.network.handshake.NetworkSwapService;
-import com.kamikazejam.syncengine.mode.profile.network.profile.impl.NetworkProfileLocal;
-import com.kamikazejam.syncengine.mode.profile.network.profile.impl.NetworkProfileRedis;
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfileService;
+import com.kamikazejam.syncengine.mode.profile.handshake.swap.NetworkSwapService;
+import com.kamikazejam.syncengine.networkprofile.service.NetworkProfileServiceLocal;
+import com.kamikazejam.syncengine.networkprofile.service.NetworkProfileServiceRedis;
+import com.kamikazejam.syncengine.networkprofile.service.NetworkProfileService;
 import com.kamikazejam.syncengine.server.ServerService;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
@@ -91,9 +91,9 @@ public enum SyncMode {
         if (networkService == null) {
             EngineSource.get().getColorLogger().info("Enabling NetworkStore...");
             if (this == NETWORKED) {
-                networkService = new NetworkProfileRedis();
+                networkService = new NetworkProfileServiceRedis();
             } else {
-                networkService = new NetworkProfileLocal();
+                networkService = new NetworkProfileServiceLocal();
             }
         }
         return networkService;

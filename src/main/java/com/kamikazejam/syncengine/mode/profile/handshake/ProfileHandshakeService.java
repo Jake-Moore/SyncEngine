@@ -8,7 +8,7 @@ import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
-import com.kamikazejam.syncengine.mode.profile.handshake.data.HandshakeData;
+import com.kamikazejam.syncengine.mode.profile.handshake.struct.HandshakeData;
 import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;

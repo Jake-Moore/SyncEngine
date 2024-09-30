@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.mode.profile.network.handshake;
+package com.kamikazejam.syncengine.mode.profile.handshake.swap;
 
 import com.kamikazejam.kamicommon.util.data.TriState;
 import lombok.Getter;

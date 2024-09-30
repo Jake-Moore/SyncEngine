@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.mode.profile.handshake.data;
+package com.kamikazejam.syncengine.mode.profile.handshake.struct;
 
 import lombok.Getter;
 import lombok.Setter;

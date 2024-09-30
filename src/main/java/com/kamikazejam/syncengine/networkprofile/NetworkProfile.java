@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.mode.profile.network.profile;
+package com.kamikazejam.syncengine.networkprofile;
 
 import com.kamikazejam.kamicommon.json.JSONObject;
 import com.kamikazejam.kamicommon.util.Preconditions;
@@ -9,14 +9,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
 /**
- * {@link NetworkProfile#markLoaded} called in SyncListener.onProfileCachingStart <br>
- * {@link NetworkProfile#markUnloaded} called in SyncProfileLoader.uncache
+ * The profile for a given {@link Player} on a network (SyncEngine servers on the same SyncGroup & Redis).
  */
 @Data
 @Accessors(chain = true)

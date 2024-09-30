@@ -16,7 +16,7 @@ import com.kamikazejam.syncengine.mode.profile.ProfileCache;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
 import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.AsyncCachesExecutor;

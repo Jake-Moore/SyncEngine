@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine.mode.profile.handshake;
 
 import com.kamikazejam.kamicommon.util.data.Pair;
-import com.kamikazejam.syncengine.mode.profile.handshake.data.HandshakeData;
+import com.kamikazejam.syncengine.mode.profile.handshake.struct.HandshakeData;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;

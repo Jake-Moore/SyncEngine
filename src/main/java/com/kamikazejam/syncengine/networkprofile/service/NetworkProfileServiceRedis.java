@@ -1,11 +1,10 @@
-package com.kamikazejam.syncengine.mode.profile.network.profile.impl;
+package com.kamikazejam.syncengine.networkprofile.service;
 
 import com.kamikazejam.kamicommon.lettuce.core.api.StatefulRedisConnection;
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfile;
-import com.kamikazejam.syncengine.mode.profile.network.profile.NetworkProfileService;
+import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import lombok.Getter;
@@ -25,9 +24,9 @@ import java.util.stream.Collectors;
  */
 @Getter
 @SuppressWarnings({"DuplicatedCode", "unused"})
-public class NetworkProfileRedis extends NetworkProfileService {
+public class NetworkProfileServiceRedis extends NetworkProfileService {
 
-    public NetworkProfileRedis() {}
+    public NetworkProfileServiceRedis() {}
 
     // ----------------------------------------------------- //
     //                  NetworkProfileStore                  //
