@@ -1,10 +1,10 @@
-package com.kamikazejam.syncengine.networkprofile.service;
+package com.kamikazejam.syncengine.network.profile.service;
 
 import com.kamikazejam.kamicommon.lettuce.core.api.StatefulRedisConnection;
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import lombok.Getter;
@@ -53,25 +53,40 @@ public class NetworkProfileServiceRedis extends NetworkProfileService {
     }
 
     @Override
-    public boolean save(@NotNull NetworkProfile networkProfile) {
-        Preconditions.checkNotNull(networkProfile, "NetworkProfile cannot be null");
-        Preconditions.checkNotNull(networkProfile.getUUID(), "NetworkProfile UUID cannot be null");
-        Preconditions.checkNotNull(networkProfile.getUsername(), "NetworkProfile username cannot be null");
+    public boolean saveSync(@NotNull NetworkProfile profile) {
+        return this.saveInternal(profile, true);
+    }
+
+    @Override
+    public boolean saveAsync(@NotNull NetworkProfile profile) {
+        return this.saveInternal(profile, false);
+    }
+
+    private boolean saveInternal(@NotNull NetworkProfile profile, boolean sync) {
+        Preconditions.checkNotNull(profile, "NetworkProfile cannot be null");
+        Preconditions.checkNotNull(profile.getUUID(), "NetworkProfile UUID cannot be null");
+        Preconditions.checkNotNull(profile.getUsername(), "NetworkProfile username cannot be null");
+
+        profile.markSaved(); // Mark saved
 
         final String hashKey = getHashKey();
-        final String keyString = getKeyString(networkProfile.getUUID());
+        final String keyString = getKeyString(profile.getUUID());
         Preconditions.checkNotNull(hashKey, "Hash key cannot be null");
         Preconditions.checkNotNull(keyString, "Key cannot be null");
 
         // Convert networkProfile into a json string
-        String json = JacksonUtil.serialize(networkProfile);
+        String json = JacksonUtil.serialize(profile);
         Preconditions.checkNotNull(json, "JSON cannot be null");
 
         try {
-            getRedis().async().hset(hashKey, keyString, json);
+            if (sync) {
+                getRedis().sync().hset(hashKey, keyString, json);
+            } else {
+                getRedis().async().hset(hashKey, keyString, json);
+            }
             return true;
         } catch (Exception ex) {
-            info(ex, "Error saving NetworkProfile in Redis Network Service for UUID: " + networkProfile.getUUID());
+            info(ex, "Error saving NetworkProfile in Redis Network Service for UUID: " + profile.getUUID());
             return false;
         }
     }

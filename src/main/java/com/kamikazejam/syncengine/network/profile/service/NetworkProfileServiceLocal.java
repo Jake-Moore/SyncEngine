@@ -1,7 +1,7 @@
-package com.kamikazejam.syncengine.networkprofile.service;
+package com.kamikazejam.syncengine.network.profile.service;
 
 import com.kamikazejam.kamicommon.util.PlayerUtil;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.ApiStatus;
@@ -32,14 +32,20 @@ public class NetworkProfileServiceLocal extends NetworkProfileService {
         // Update their online state and that the last seen server is this one, then save the profile
         profile.setOnline(PlayerUtil.isFullyValidPlayer(Bukkit.getPlayer(uuid)));
         profile.setLastSeenServer(profile.getThisServerName());
-        this.save(profile);
+        this.saveSync(profile);
     }
 
     @Override
-    public boolean save(@NotNull NetworkProfile profile) {
+    public boolean saveSync(@NotNull NetworkProfile profile) {
         profile.markSaved();
         localCache.put(profile.getUUID(), profile);
         return true;
+    }
+
+    @Override
+    public boolean saveAsync(@NotNull NetworkProfile profile) {
+        // No difference between sync and async saving for this local service
+        return saveSync(profile);
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.kamikazejam.syncengine.networkprofile.service;
+package com.kamikazejam.syncengine.network.profile.service;
 
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.syncengine.EngineSource;
@@ -6,7 +6,7 @@ import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.loader.NetworkedProfileLoader;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -37,10 +37,16 @@ public abstract class NetworkProfileService extends LoggerService implements Ser
     public abstract void verifyPlayerOrigin(@NotNull UUID uuid, @NotNull String username, @NotNull SyncServer server);
 
     /**
-     * Saves the NetworkProfile to this store
+     * Saves the NetworkProfile to this store (synchronously)
      * @return true if the save was successful
      */
-    public abstract boolean save(@NotNull NetworkProfile profile);
+    public abstract boolean saveSync(@NotNull NetworkProfile profile);
+
+    /**
+     * Saves the NetworkProfile to this store (asynchronously)
+     * @return true if the save was successful
+     */
+    public abstract boolean saveAsync(@NotNull NetworkProfile profile);
 
     @ApiStatus.Internal
     protected abstract Optional<NetworkProfile> get(@NotNull UUID uuid);
@@ -73,7 +79,7 @@ public abstract class NetworkProfileService extends LoggerService implements Ser
             // Set their NetworkProfile to offline
             NetworkProfile np = this.getOrCreate(player);
             np.markUnloaded(false);
-            this.save(np);
+            this.saveSync(np);
         }
 
         return true;
@@ -118,7 +124,7 @@ public abstract class NetworkProfileService extends LoggerService implements Ser
         Optional<NetworkProfile> o = get(uuid);
         NetworkProfile np = o.orElseGet(() -> create(uuid));
         // Ensure the NetworkProfile is saved
-        this.save(np);
+        this.saveSync(np);
         return np;
     }
 
@@ -132,7 +138,7 @@ public abstract class NetworkProfileService extends LoggerService implements Ser
         o.ifPresent(p -> p.setUsername(username));
         NetworkProfile np = o.orElseGet(() -> create(uuid, username));
         // Ensure the NetworkProfile is saved
-        this.save(np);
+        this.saveSync(np);
         return np;
     }
 
@@ -156,7 +162,7 @@ public abstract class NetworkProfileService extends LoggerService implements Ser
             return newNp;
         });
         // Ensure the NetworkProfile is saved
-        this.save(np);
+        this.saveSync(np);
         return np;
     }
 

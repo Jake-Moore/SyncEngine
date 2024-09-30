@@ -3,7 +3,7 @@ package com.kamikazejam.syncengine.mode.profile.loader;
 import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 
 import java.util.Optional;
 
@@ -50,7 +50,7 @@ public class StandaloneProfileLoader {
         if (loader.login) {
             NetworkProfile networkProfile = loader.cache.getNetworkStore().getOrCreate(loader.sync);
             networkProfile.markLoaded(loader.login);
-            loader.cache.runAsync(() -> loader.cache.getNetworkStore().save(networkProfile));
+            loader.cache.runAsync(() -> loader.cache.getNetworkStore().saveSync(networkProfile));
 
             // Update their username
             if (loader.username != null) {

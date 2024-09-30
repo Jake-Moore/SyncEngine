@@ -9,7 +9,7 @@ import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.mode.profile.listener.ProfileListener;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
 import org.bukkit.Bukkit;

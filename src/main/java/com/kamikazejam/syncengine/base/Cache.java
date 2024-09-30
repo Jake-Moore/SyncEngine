@@ -13,8 +13,8 @@ import com.kamikazejam.syncengine.base.update.UpdateTask;
 import com.kamikazejam.syncengine.mode.object.ObjectCache;
 import com.kamikazejam.syncengine.mode.profile.ProfileCache;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
-import com.kamikazejam.syncengine.networkprofile.service.NetworkProfileService;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.service.NetworkProfileService;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.*;
 

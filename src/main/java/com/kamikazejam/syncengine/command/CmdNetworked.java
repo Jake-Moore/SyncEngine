@@ -6,7 +6,7 @@ import com.kamikazejam.kamicommon.command.type.sender.TypeOfflinePlayer;
 import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.kamicommon.util.exception.KamiCommonException;
 import com.kamikazejam.syncengine.EngineSource;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.util.JacksonUtil;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;

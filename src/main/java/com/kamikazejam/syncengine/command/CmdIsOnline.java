@@ -7,7 +7,7 @@ import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.kamicommon.util.exception.KamiCommonException;
 import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
 import com.kamikazejam.syncengine.EngineSource;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import org.bukkit.OfflinePlayer;
 
 public class CmdIsOnline extends KamiCommand {

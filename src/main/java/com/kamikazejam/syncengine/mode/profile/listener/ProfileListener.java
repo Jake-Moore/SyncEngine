@@ -16,7 +16,7 @@ import com.kamikazejam.syncengine.mode.profile.ProfileCache;
 import com.kamikazejam.syncengine.mode.profile.SyncProfile;
 import com.kamikazejam.syncengine.mode.profile.SyncProfileCache;
 import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.server.ServerService;
 import com.kamikazejam.syncengine.server.SyncServer;
 import com.kamikazejam.syncengine.util.AsyncCachesExecutor;
@@ -113,11 +113,12 @@ public class ProfileListener implements Listener {
         networkProfile.markLoaded(true);  // Also sets online to true
         networkProfile.setUUID(uniqueId);       // ensure valid and up-to-date data
         networkProfile.setUsername(username);   // ensure valid and up-to-date data
+        networkProfile.setLastSeenIP(ip);       // ensure valid and up-to-date data
         networkProfile.markSaved();
 
         // Save async to prevent unnecessary blocking on join
         Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () ->
-                EngineSource.getNetworkService().save(networkProfile)
+                EngineSource.getNetworkService().saveSync(networkProfile)
         );
         EngineSource.getNetworkService().debug("Player " + username + " (" + uniqueId + ") marked as loaded in " + (System.currentTimeMillis() - ms) + "ms");
     }
@@ -221,7 +222,7 @@ public class ProfileListener implements Listener {
         profile.markUnloaded(swappingServers);
         profile.markSaved();
         Bukkit.getScheduler().runTaskAsynchronously(EngineSource.get(), () ->
-                EngineSource.getNetworkService().save(profile)
+                EngineSource.getNetworkService().saveSync(profile)
         );
         swapMap.invalidate(player.getUniqueId());
 

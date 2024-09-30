@@ -18,7 +18,7 @@ import com.kamikazejam.syncengine.base.sync.SyncInstantiator;
 import com.kamikazejam.syncengine.base.update.UpdateTask;
 import com.kamikazejam.syncengine.mode.profile.handshake.ProfileHandshakeService;
 import com.kamikazejam.syncengine.mode.profile.loader.SyncProfileLoader;
-import com.kamikazejam.syncengine.networkprofile.NetworkProfile;
+import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import com.kamikazejam.syncengine.mode.profile.store.ProfileStoreDatabase;
 import com.kamikazejam.syncengine.mode.profile.store.ProfileStoreLocal;
 import com.kamikazejam.syncengine.mode.profile.update.ProfileUpdater;
@@ -312,7 +312,7 @@ public abstract class SyncProfileCache<X extends SyncProfile> extends SyncCache<
             }
 
             // We are saving a SyncProfile on the same server as the Player, update their NetworkProfile
-            if (EngineSource.getNetworkService().save(np)) {
+            if (EngineSource.getNetworkService().saveSync(np)) {
                 return true;
             } else {
                 loggerService.info("Failed to save profile " + sync.getUniqueId() + ": Couldn't save network profile (but saved normal profile)");

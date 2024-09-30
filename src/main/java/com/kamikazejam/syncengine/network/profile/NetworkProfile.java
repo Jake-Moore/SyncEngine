@@ -1,8 +1,10 @@
-package com.kamikazejam.syncengine.networkprofile;
+package com.kamikazejam.syncengine.network.profile;
 
 import com.kamikazejam.kamicommon.json.JSONObject;
 import com.kamikazejam.kamicommon.util.Preconditions;
 import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
+import com.kamikazejam.syncengine.EngineSource;
+import com.kamikazejam.syncengine.network.player.NetworkPlayer;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -10,9 +12,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Blocking;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -31,6 +36,7 @@ public class NetworkProfile {
     @Getter(AccessLevel.NONE)
     private @NotNull UUID uuid;
     private @Nullable String username;
+    private @Nullable String lastSeenIP;
 
     private String lastSeenServer;
     private long lastSeen = 0L;
@@ -52,6 +58,13 @@ public class NetworkProfile {
         Preconditions.checkNotNull(username, "Username cannot be null");
         this.uuid = uuid;
         this.username = username;
+    }
+
+    // Maintain a lazy link to the NetworkPlayer
+    private transient @Nullable NetworkPlayer player;
+    public @NotNull NetworkPlayer getPlayer() {
+        // We can cache NetworkPlayer since it's nothing more than a utility wrapper around the player UUID
+        return (player == null) ? (player = new NetworkPlayer(uuid)) : player;
     }
 
     public boolean isOnlineOtherServer() {
@@ -117,6 +130,13 @@ public class NetworkProfile {
         return username;
     }
 
+    public @NotNull Optional<String> getUsernameOptional() {
+        if (username == null) {
+            username = IdUtilLocal.getName(uuid);
+        }
+        return Optional.ofNullable(username);
+    }
+
     public static NetworkProfile deserialize(@NotNull String json) {
         try {
             JSONObject obj = new JSONObject(json);
@@ -131,5 +151,16 @@ public class NetworkProfile {
             Bukkit.getLogger().severe("MALFORMED JSON: " + json);
             throw t;
         }
+    }
+
+    @Blocking
+    public void saveSync() {
+        // Save this profile to the network
+        EngineSource.getNetworkService().saveSync(this);
+    }
+
+    @NonBlocking
+    public void saveAsync() {
+        EngineSource.getNetworkService().saveAsync(this);
     }
 }
