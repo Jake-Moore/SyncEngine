@@ -7,7 +7,10 @@ import com.kamikazejam.syncengine.EngineSource;
 import com.kamikazejam.syncengine.SyncEngineAPI;
 import com.kamikazejam.syncengine.connections.redis.RedisService;
 import com.kamikazejam.syncengine.connections.storage.StorageService;
+import com.kamikazejam.syncengine.util.struct.DatabaseRegistration;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 public class CmdDatabases extends KamiCommand {
     public CmdDatabases() {
@@ -26,6 +29,9 @@ public class CmdDatabases extends KamiCommand {
             sender.sendMessage(StringUtil.t("&7Redis: " + (redis.getApi().isConnected() ? "&aConnected" : "&cDisconnected")));
         }
         sender.sendMessage(StringUtil.t("&7Databases:"));
-        SyncEngineAPI.getDatabases().values().forEach((n) -> sender.sendMessage(StringUtil.t("&7 - " + n)));
+        SyncEngineAPI.getDatabases().values().stream()
+                .filter(Objects::nonNull)
+                .map(DatabaseRegistration::getDatabaseName)
+                .forEach((n) -> sender.sendMessage(StringUtil.t("&7 - " + n)));
     }
 }

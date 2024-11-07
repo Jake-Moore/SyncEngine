@@ -16,5 +16,6 @@ public class SyncEngineCommand extends KamiCommand {
         addChild(new CmdIsOnline());
         addChild(new CmdServers());
         addChild(new CmdNetworked());
+        addChild(new CmdNetStat());
     }
 }

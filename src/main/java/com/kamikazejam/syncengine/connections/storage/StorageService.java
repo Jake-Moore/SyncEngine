@@ -8,6 +8,7 @@ import com.kamikazejam.syncengine.base.SyncCache;
 import com.kamikazejam.syncengine.base.error.LoggerService;
 import com.kamikazejam.syncengine.base.exception.VersionMismatchException;
 import com.kamikazejam.syncengine.base.index.IndexedField;
+import org.jetbrains.annotations.Blocking;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,6 +71,12 @@ public abstract class StorageService extends LoggerService implements Service {
      */
     public abstract <K, X extends Sync<K>> void onRegisteredCache(Cache<K, X> cache);
 
+    /**
+     * Test the ping to the storage service. Will block thread until ping is calculated.
+     * @return The ping (in Nanoseconds) to the storage service. (Returns -1 if ping failed or is not available)
+     */
+    @Blocking
+    public abstract long getPingNano();
 
     // ------------------------------------------------- //
     //                     Indexing                      //

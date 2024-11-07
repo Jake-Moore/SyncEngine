@@ -1,7 +1,9 @@
 package com.kamikazejam.syncengine.network.player;
 
+import com.kamikazejam.kamicommon.util.JacksonUtil;
 import com.kamikazejam.kamicommon.util.PlayerUtil;
 import com.kamikazejam.syncengine.EngineSource;
+import com.kamikazejam.syncengine.network.player.actions.PlayerAction;
 import com.kamikazejam.syncengine.network.profile.NetworkProfile;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -11,6 +13,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Utility wrapper for accessing {@link Player} information, and some modifications.<br>
@@ -78,6 +81,29 @@ public class NetworkPlayer {
             return Optional.of(player);
         }
         return Optional.empty();
+    }
+
+    /**
+     * @return A future that completes with the result of the action (player found & performed OR not found & not executed)
+     */
+    @NotNull
+    public CompletableFuture<Boolean> completeAction(@NotNull PlayerAction action) {
+        // If we have the player on this server -> we can directly fulfill the action using the player
+        @Nullable Player player = getPlayer().orElse(null);
+        if (PlayerUtil.isFullyValidPlayer(player)) {
+            // Keep this a sync operation since we have the player
+            // Just return an already completed future (no delay)
+            action.perform(player);
+            return CompletableFuture.completedFuture(true);
+        }
+
+        // Otherwise, we need to serialize the action and send it to the player's server
+        String json = JacksonUtil.serialize(action);
+
+        // TODO figure out if redis or rabbitMQ is the best way of doing this
+        //  IDEALLY we have an RPC that responds with the result of the action (if the player could be found)
+
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
 

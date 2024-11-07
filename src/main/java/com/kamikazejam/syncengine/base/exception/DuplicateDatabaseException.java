@@ -1,14 +1,17 @@
 package com.kamikazejam.syncengine.base.exception;
 
+import com.kamikazejam.syncengine.util.struct.DatabaseRegistration;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 @Getter
 @SuppressWarnings("unused")
 public class DuplicateDatabaseException extends Exception {
 
-    private final String databaseName;
-    public DuplicateDatabaseException(String databaseName) {
-        this.databaseName = databaseName;
+    private final @NotNull DatabaseRegistration existingRegistration;
+    public DuplicateDatabaseException(@NotNull DatabaseRegistration existing) {
+        super("A database with the name '" + existing.getDatabaseName() + "' already exists. It was registered by " + existing.getOwningPlugin().getName());
+        this.existingRegistration = existing;
     }
 
 }

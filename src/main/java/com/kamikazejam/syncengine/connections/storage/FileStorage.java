@@ -397,4 +397,9 @@ public class FileStorage extends StorageService {
             cache.tryAsync(() -> saveIndexCache(cache));
         }
     }
+
+    @Override
+    public long getPingNano() {
+        return -1;
+    }
 }

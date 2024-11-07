@@ -7,12 +7,12 @@ val VERSION = "0.6.0-SNAPSHOT"
 plugins {
     id("java")
     id("java-library")
-    id("io.github.goooler.shadow") version "8.1.7"
+    id("com.gradleup.shadow") version "8.3.5"
     id("maven-publish")
 }
 
 // Export KamiCommonVer for use in all subprojects
-val kamiCommonVer = "3.6.0.0"
+val kamiCommonVer = "3.6.1.2"
 
 group = "com.kamikazejam"
 version = VERSION

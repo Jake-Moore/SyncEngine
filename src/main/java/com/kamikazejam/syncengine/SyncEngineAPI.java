@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import com.kamikazejam.syncengine.base.Cache;
 import com.kamikazejam.syncengine.base.exception.DuplicateCacheException;
 import com.kamikazejam.syncengine.base.exception.DuplicateDatabaseException;
+import com.kamikazejam.syncengine.util.struct.DatabaseRegistration;
 import lombok.Getter;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,8 +20,10 @@ import java.util.stream.Collectors;
 public class SyncEngineAPI {
     @Getter
     private static final ConcurrentMap<String, Cache<?, ?>> caches = new ConcurrentHashMap<>();
+
+    // Key is databaseName stored lowercase for uniqueness checks
     @Getter
-    private static final ConcurrentMap<String, String> databases = new ConcurrentHashMap<>(); // Stored lowercase for uniqueness checks
+    private static final ConcurrentMap<String, DatabaseRegistration> databases = new ConcurrentHashMap<>();
 
     /**
      * Get a cache by name
@@ -110,11 +114,16 @@ public class SyncEngineAPI {
         return EngineSource.isDebug();
     }
 
-    public static void registerDatabase(String databaseName) throws DuplicateDatabaseException {
-        if (isDatabaseNameRegistered(databaseName)) {
-            throw new DuplicateDatabaseException(databaseName);
+    private static void registerDatabase(@NotNull Plugin owner, @NotNull String databaseName) throws DuplicateDatabaseException {
+        @Nullable DatabaseRegistration registration = getDatabaseRegistration(databaseName);
+        if (registration != null) {
+            throw new DuplicateDatabaseException(registration);
         }
-        databases.put(databaseName.toLowerCase(), databaseName);
+        databases.put(databaseName.toLowerCase(), new DatabaseRegistration(databaseName, owner));
+    }
+
+    private static @Nullable DatabaseRegistration getDatabaseRegistration(@NotNull String databaseName) {
+        return databases.get(databaseName.toLowerCase());
     }
 
     public static boolean isDatabaseNameRegistered(String databaseName) {
@@ -129,7 +138,7 @@ public class SyncEngineAPI {
     public static SyncRegistration register(@NotNull JavaPlugin plugin, @NotNull String databaseName) throws DuplicateDatabaseException {
         Preconditions.checkNotNull(databaseName);
 
-        registerDatabase(getFullDatabaseName(databaseName));
+        registerDatabase(plugin, getFullDatabaseName(databaseName));
         return new SyncRegistration(plugin, databaseName);
     }
 }

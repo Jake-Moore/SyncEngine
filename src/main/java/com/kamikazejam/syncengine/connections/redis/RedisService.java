@@ -6,13 +6,11 @@ import com.kamikazejam.kamicommon.util.log.LoggerService;
 import com.kamikazejam.syncengine.base.Service;
 import com.kamikazejam.syncengine.connections.config.RedisConfig;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jetbrains.annotations.Blocking;
 
 @SuppressWarnings("DuplicatedCode")
 @Getter
 public class RedisService implements Service {
-    private static final Logger log = LoggerFactory.getLogger(RedisService.class);
     private boolean running = false;
     private RedisAPI api;
     private final LoggerService logger;
@@ -47,5 +45,16 @@ public class RedisService implements Service {
         }
         this.running = false;
         return true;
+    }
+
+    /**
+     * Test the ping to the storage service. Will block thread until ping is calculated.
+     * @return The ping (in Nanoseconds) to the storage service.
+     */
+    @Blocking
+    public long getPingNano() {
+        long start = System.nanoTime();
+        String ignored = api.getCmdsSync().ping();
+        return System.nanoTime() - start;
     }
 }

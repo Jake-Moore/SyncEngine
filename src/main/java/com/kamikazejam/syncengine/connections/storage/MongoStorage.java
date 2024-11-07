@@ -273,6 +273,8 @@ public class MongoStorage extends StorageService {
     private boolean disconnectMongo() {
         if (this.mongoClient != null) {
             this.mongoClient.close();
+            this.mongoClient = null;
+            this.mongoConnected = false;
         }
         return true;
     }
@@ -388,5 +390,20 @@ public class MongoStorage extends StorageService {
     @Override
     public <K, X extends Sync<K>> void invalidateIndexes(@NotNull SyncCache<K, X> cache, @NotNull K syncId, boolean updateFile) {
         // do nothing -> MongoDB handles this
+    }
+
+    @Override
+    public long getPingNano() {
+        Preconditions.checkNotNull(mongoClient);
+        Preconditions.checkState(mongoConnected);
+
+        try {
+            // Get the ping to MongoDB
+            long nanos = System.nanoTime();
+            mongoClient.listDatabaseNames().first();
+            return System.nanoTime() - nanos;
+        } catch (Exception ex) {
+            return -1;
+        }
     }
 }
