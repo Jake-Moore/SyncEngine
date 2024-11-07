@@ -114,12 +114,12 @@ public class SyncEngineAPI {
         return EngineSource.isDebug();
     }
 
-    private static void registerDatabase(@NotNull Plugin owner, @NotNull String databaseName) throws DuplicateDatabaseException {
+    private static void registerDatabase(@NotNull Plugin plugin, @NotNull String databaseName) throws DuplicateDatabaseException {
         @Nullable DatabaseRegistration registration = getDatabaseRegistration(databaseName);
         if (registration != null) {
-            throw new DuplicateDatabaseException(registration);
+            throw new DuplicateDatabaseException(registration, plugin);
         }
-        databases.put(databaseName.toLowerCase(), new DatabaseRegistration(databaseName, owner));
+        databases.put(databaseName.toLowerCase(), new DatabaseRegistration(databaseName, plugin));
     }
 
     private static @Nullable DatabaseRegistration getDatabaseRegistration(@NotNull String databaseName) {
