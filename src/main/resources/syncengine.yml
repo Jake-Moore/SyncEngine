@@ -47,3 +47,8 @@ profiles:
 
 # Enables additional logging for debugging purposes. Can be informative for developers.
 debug: true
+# These options require 'debug' to be enabled (set to true above)
+debugLogs:
+  # When enabled, calls to sync.save() that don't actually have any changes, will be logged as a warning
+  # By default, this is disabled, and those save calls are just ignored (no log)
+  saveCallsWithNoWork: false
