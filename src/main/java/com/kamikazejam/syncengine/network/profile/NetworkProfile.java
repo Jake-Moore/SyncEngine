@@ -112,7 +112,7 @@ public class NetworkProfile {
 
     public @NotNull String getUsername() {
         if (username == null) {
-            username = IdUtilLocal.getName(uuid);
+            username = IdUtilLocal.getName(uuid).orElse(null);
         }
         if (username == null) {
             throw new IllegalStateException("[NetworkProfile] Username is null for UUID: " + uuid);
@@ -122,7 +122,7 @@ public class NetworkProfile {
 
     public @NotNull String getUsername(@NotNull String def) {
         if (username == null) {
-            username = IdUtilLocal.getName(uuid);
+            username = IdUtilLocal.getName(uuid).orElse(null);
         }
         if (username == null) {
             return def;
@@ -132,7 +132,7 @@ public class NetworkProfile {
 
     public @NotNull Optional<String> getUsernameOptional() {
         if (username == null) {
-            username = IdUtilLocal.getName(uuid);
+            username = IdUtilLocal.getName(uuid).orElse(null);
         }
         return Optional.ofNullable(username);
     }

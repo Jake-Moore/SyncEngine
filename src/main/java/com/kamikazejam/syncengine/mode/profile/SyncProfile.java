@@ -213,7 +213,7 @@ public abstract class SyncProfile implements Sync<UUID> {
     public @NotNull Optional<String> getUsername() {
         if (this.username == null) {
             // Try to get the name from the cache
-            this.username = IdUtilLocal.getName(this.getUniqueId());
+            this.username = IdUtilLocal.getName(this.getUniqueId()).orElse(null);
         }
         return Optional.ofNullable(this.username);
     }

@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.command;
 
 import com.kamikazejam.kamicommon.command.KamiCommand;
+import com.kamikazejam.kamicommon.command.Parameter;
 import com.kamikazejam.kamicommon.command.requirement.RequirementHasPerm;
 import com.kamikazejam.kamicommon.util.StringUtil;
 import com.kamikazejam.kamicommon.util.exception.KamiCommonException;
@@ -17,7 +18,7 @@ public class CmdCache extends KamiCommand {
 
         addRequirements(RequirementHasPerm.get("syncengine.command.cache"));
 
-        addParameter(TypeCache.get(), "cache", true);
+        addParameter(Parameter.of(TypeCache.get()).name("cache").concatFromHere(true));
     }
 
     @Override

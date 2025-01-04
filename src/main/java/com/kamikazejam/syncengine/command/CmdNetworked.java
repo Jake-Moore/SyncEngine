@@ -1,6 +1,7 @@
 package com.kamikazejam.syncengine.command;
 
 import com.kamikazejam.kamicommon.command.KamiCommand;
+import com.kamikazejam.kamicommon.command.Parameter;
 import com.kamikazejam.kamicommon.command.requirement.RequirementHasPerm;
 import com.kamikazejam.kamicommon.command.type.sender.TypeOfflinePlayer;
 import com.kamikazejam.kamicommon.util.StringUtil;
@@ -17,7 +18,7 @@ public class CmdNetworked extends KamiCommand {
     public CmdNetworked() {
         addAliases("networkprofile", "np", "networked");
 
-        addParameter(TypeOfflinePlayer.get(), "player");
+        addParameter(Parameter.of(TypeOfflinePlayer.get()).name("player"));
 
         addRequirements(RequirementHasPerm.get("syncengine.command.networked"));
     }

@@ -2,7 +2,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 @Suppress("PropertyName")
-val VERSION = "0.6.0-SNAPSHOT"
+val VERSION = "0.6.1-SNAPSHOT"
 
 plugins {
     id("java")
@@ -12,7 +12,7 @@ plugins {
 }
 
 // Export KamiCommonVer for use in all subprojects
-val kamiCommonVer = "3.6.1.2"
+val kamiCommonVer = "4.0.0-beta.5-20250104.032924-1"
 
 group = "com.kamikazejam"
 version = VERSION
@@ -22,6 +22,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven("https://repo.luxiouslabs.net/repository/maven-public/")
+    maven("https://repo.codemc.io/repository/maven-public/")
 }
 
 // We want UTF-8 for everything
@@ -40,6 +41,7 @@ dependencies {
     compileOnly("net.techcable.tacospigot:server:1.8.8-R0.2-REDUCED")
 
     // KamiCommon
+    // forced to use spigot-jar because of its relocations & its complete shading inside another project
     compileOnly("com.kamikazejam.kamicommon:spigot-jar:$kamiCommonVer")
 
     // MongoJack

@@ -1,7 +1,7 @@
 package com.kamikazejam.syncengine;
 
 import com.kamikazejam.kamicommon.KamiPlugin;
-import com.kamikazejam.kamicommon.SpigotUtilProvider;
+import com.kamikazejam.kamicommon.SpigotUtilsSource;
 import com.kamikazejam.kamicommon.configuration.spigot.KamiConfig;
 import com.kamikazejam.kamicommon.util.id.IdUtilLocal;
 import com.kamikazejam.kamicommon.yaml.standalone.YamlUtil;
@@ -46,7 +46,7 @@ public class EngineSource {
         enabled = true;
 
         // Provide KamiCommon utils with this plugin as well
-        SpigotUtilProvider.setPlugin(plugin);
+        SpigotUtilsSource.onEnable(plugin);
         YamlUtil.getYaml();
         IdUtilLocal.setup(plugin);
 
@@ -99,6 +99,8 @@ public class EngineSource {
         // Shutdown Services
         syncMode.disableServices();
         storageMode.disableServices();
+
+        SpigotUtilsSource.onDisable();
 
         // Set to disabled
         boolean prev = enabled;
